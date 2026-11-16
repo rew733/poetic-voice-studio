@@ -112,7 +112,7 @@
 
 <header>
   <h1>🎙️ استوديو الإلقاء الإذاعي</h1>
-  <span class="badge">Studio Pro v7</span>
+  <span class="badge">Studio Pro v8</span>
 </header>
 
 <!-- 1. الملقن الشعري -->
@@ -152,18 +152,18 @@
   </div>
 
   <select id="geminiModelSelect" class="input-field" onchange="onGeminiModelSelect(this.value)">
-    <option value="gemini-3.8-flash">⚡ Gemini 3.8 Flash (الأسرع والموصى به)</option>
-    <option value="gemini-3.8-pro">🧠 Gemini 3.8 Pro (تحليل عميق متقدم)</option>
-    <option value="gemini-3.5-flash">🔹 Gemini 3.5 Flash</option>
+    <option value="gemini-2.0-flash">⚡ Gemini 2.0 Flash (سريع ومستقر جداً)</option>
+    <option value="gemini-2.5-flash">🔹 Gemini 2.5 Flash</option>
+    <option value="gemini-3.8-flash">🚀 Gemini 3.8 Flash</option>
     <option value="custom">✍️ كتابة اسم الموديل يدوياً...</option>
   </select>
 
-  <input type="text" id="geminiModelInput" class="input-field hidden" placeholder="اكتب اسم الموديل (مثال: gemini-3.8-flash)" value="gemini-3.8-flash" oninput="localStorage.setItem('gemini_model_name', this.value)">
+  <input type="text" id="geminiModelInput" class="input-field hidden" placeholder="اكتب اسم الموديل (مثال: gemini-2.0-flash)" value="gemini-2.0-flash" oninput="localStorage.setItem('gemini_model_name', this.value)">
   <input type="password" id="geminiKeyInput" class="input-field" placeholder="أدخل مفتاح Gemini API Key (يُحفظ تلقائياً)" oninput="localStorage.setItem('gemini_api_key', this.value)">
   
   <div class="rec-actions">
-    <button class="btn btn-gemini" onclick="analyzeRecitationWithGemini()">🎙️ تقييم الإلقاء والتشكيل</button>
-    <button class="btn btn-gemini" onclick="auditAppWithGemini()">🛠️ فحص التطبيق واقتراح ميزات</button>
+    <button class="btn btn-gemini" id="btnAnalyzeRec" onclick="analyzeRecitationWithGemini()">🎙️ تقييم الإلقاء والتشكيل</button>
+    <button class="btn btn-gemini" id="btnAuditApp" onclick="auditAppWithGemini()">🛠️ فحص التطبيق واقتراح ميزات</button>
   </div>
   <div id="geminiReportBox" class="ai-report-box hidden"></div>
 </div>
@@ -345,16 +345,34 @@
   }
 
   function getActiveGeminiModel() {
-    const rawName = document.getElementById('geminiModelInput').value.trim() || 'gemini-3.8-flash';
+    const rawName = document.getElementById('geminiModelInput').value.trim() || 'gemini-2.0-flash';
     return rawName.replace(/^models\//, '');
   }
 
   function blobToBase64(blob) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = () => reject(new Error('فشل قراءة الملف الصوتي'));
       reader.readAsDataURL(blob);
     });
+  }
+
+  // Fetch with 35s Timeout to prevent infinite hanging
+  async function fetchWithTimeout(url, options, timeoutMs = 35000) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, { ...options, signal: controller.signal });
+      clearTimeout(id);
+      return response;
+    } catch (err) {
+      clearTimeout(id);
+      if (err.name === 'AbortError') {
+        throw new Error('انتهت مهلة الاتصال (35 ثانية) بسبب ضعف الإنترنت أو انقطاعه.');
+      }
+      throw err;
+    }
   }
 
   // Gemini AI Recitation & Phonetic Director
@@ -363,16 +381,18 @@
     const model = getActiveGeminiModel();
     const poem = document.getElementById('poemText').value.trim();
     const reportBox = document.getElementById('geminiReportBox');
+    const btn = document.getElementById('btnAnalyzeRec');
 
     if (!key) {
       setStatus('يرجى إدخال مفتاح Gemini API أولاً.');
       return;
     }
-    if (!rawAudioBlob && !poem) {
+    if (!rawAudioBuffer && !poem) {
       setStatus('سجّل قصيدتك أو اكتب نصها في الملقن أولاً.');
       return;
     }
 
+    btn.disabled = true;
     reportBox.classList.remove('hidden');
     reportBox.innerText = `⏳ جاري التحليل عبر (${model})...`;
 
@@ -388,21 +408,27 @@
         }
       ];
 
-      if (rawAudioBlob) {
-        const b64 = await blobToBase64(rawAudioBlob);
+      if (rawAudioBuffer) {
+        // Convert to clean WAV for fast & reliable Gemini recognition
+        const cleanWav = audioBufferToWav(rawAudioBuffer);
+        const b64 = await blobToBase64(cleanWav);
         parts.push({
           inline_data: {
-            mime_type: rawAudioBlob.type || 'audio/webm',
+            mime_type: 'audio/wav',
             data: b64
           }
         });
       }
 
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts }] })
-      });
+      const res = await fetchWithTimeout(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts }] })
+        },
+        35000
+      );
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error?.message || 'فشل الاتصال بـ Gemini');
@@ -410,6 +436,8 @@
       setStatus('✅ اكتمل تحليل المخرج الذكي.');
     } catch (e) {
       reportBox.innerText = '❌ خطأ: ' + e.message;
+    } finally {
+      btn.disabled = false;
     }
   }
 
@@ -418,17 +446,19 @@
     const key = document.getElementById('geminiKeyInput').value.trim();
     const model = getActiveGeminiModel();
     const reportBox = document.getElementById('geminiReportBox');
+    const btn = document.getElementById('btnAuditApp');
 
     if (!key) {
       setStatus('يرجى إدخال مفتاح Gemini API أولاً.');
       return;
     }
 
+    btn.disabled = true;
     reportBox.classList.remove('hidden');
     reportBox.innerText = `⏳ جاري فحص الاستوديو عبر (${model})...`;
 
     const stateSummary = {
-      app: 'Poetic Voice Studio v7 (Android WebView + Web Audio DSP + ElevenLabs STS + Cloud Music Auto-Ducking)',
+      app: 'Poetic Voice Studio v8 (Android WebView + Web Audio DSP + ElevenLabs STS + Cloud Music Auto-Ducking)',
       geminiModel: model,
       currentSliders: {
         speed: document.getElementById('speedSlider').value + 'x',
@@ -438,29 +468,33 @@
         clarity: document.getElementById('claritySlider').value,
         reverb: document.getElementById('reverbSlider').value
       },
-      hasRecording: !!rawAudioBlob,
+      hasRecording: !!rawAudioBuffer,
       hasBgMusic: !!bgMusicBuffer,
       hasElevenLabsKey: !!document.getElementById('apiKeyInput').value.trim()
     };
 
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `أنت مهندس صوتيات ومطور تطبيقات أندرويد خبير.
+      const res = await fetchWithTimeout(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: `أنت مهندس صوتيات ومطور تطبيقات أندرويد خبير.
 افحص حالة تطبيق "استوديو الإلقاء الشعري" التالية:
 ${JSON.stringify(stateSummary, null, 2)}
 
 قدم تقريراً مركزاً يشمل:
 1. تقييم الإعدادات الصوتية الحالية وهل هناك أي تضارب أو مبالغة فيها.
 2. 4 أفكار عملية ومبتكرة لتطوير الإصدار القادم من التطبيق لخدمة الشعراء وإنتاج مقاطع جاهزة للنشر.`
+              }]
             }]
-          }]
-        })
-      });
+          })
+        },
+        35000
+      );
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error?.message || 'فشل الاتصال بـ Gemini');
@@ -468,6 +502,8 @@ ${JSON.stringify(stateSummary, null, 2)}
       setStatus('✅ اكتمل فحص التطبيق.');
     } catch (e) {
       reportBox.innerText = '❌ خطأ: ' + e.message;
+    } finally {
+      btn.disabled = false;
     }
   }
 
@@ -673,7 +709,7 @@ ${JSON.stringify(stateSummary, null, 2)}
     document.getElementById('bgStatusTag').innerText = 'جاري التحميل...';
     setStatus('جاري تحميل المقطوعة من المكتبة السحابية...');
     try {
-      const response = await fetch(value);
+      const response = await fetchWithTimeout(value, {}, 25000);
       if (!response.ok) throw new Error('تعذر جلب المقطوعة السحابية');
       const blob = await response.blob();
       const arrayBuffer = await blob.arrayBuffer();
@@ -686,7 +722,7 @@ ${JSON.stringify(stateSummary, null, 2)}
       setStatus('تم تحميل الخلفية الموسيقية. اضبط توازنها ثم اضغط "دمج ومعالجة".');
     } catch (e) {
       document.getElementById('bgStatusTag').innerText = 'فشل التحميل';
-      setStatus('تأكد من اتصال الإنترنت أو اختر ملفاً من هاتفك.');
+      setStatus(e.message);
     }
   }
 
@@ -985,11 +1021,15 @@ ${JSON.stringify(stateSummary, null, 2)}
       formData.append('model_id', 'eleven_multilingual_sts_v2');
       formData.append('voice_settings', JSON.stringify({ stability: 0.40, similarity_boost: 0.85 }));
 
-      const response = await fetch(`https://api.elevenlabs.io/v1/speech-to-speech/${voiceId}`, {
-        method: 'POST',
-        headers: { 'xi-api-key': apiKey },
-        body: formData
-      });
+      const response = await fetchWithTimeout(
+        `https://api.elevenlabs.io/v1/speech-to-speech/${voiceId}`,
+        {
+          method: 'POST',
+          headers: { 'xi-api-key': apiKey },
+          body: formData
+        },
+        45000
+      );
 
       if (!response.ok) throw new Error('فشل الاتصال (' + response.status + ')');
       const aiBlob = await response.blob();
