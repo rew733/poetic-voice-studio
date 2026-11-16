@@ -112,7 +112,7 @@
 
 <header>
   <h1>🎙️ استوديو الإلقاء الإذاعي</h1>
-  <span class="badge">Gemini Director v6</span>
+  <span class="badge">Studio Pro v7</span>
 </header>
 
 <!-- 1. الملقن الشعري -->
@@ -150,7 +150,16 @@
     <span>🧠 المخرج الذكي وفاحص التطبيق (Gemini)</span>
     <span style="font-size:0.72rem; color:var(--muted);">AI Director</span>
   </div>
-  <input type="password" id="geminiKeyInput" class="input-field" placeholder="أدخل مفتاح Gemini API Key (من Google AI Studio)" oninput="localStorage.setItem('gemini_api_key', this.value)">
+
+  <select id="geminiModelSelect" class="input-field" onchange="onGeminiModelSelect(this.value)">
+    <option value="gemini-3.8-flash">⚡ Gemini 3.8 Flash (الأسرع والموصى به)</option>
+    <option value="gemini-3.8-pro">🧠 Gemini 3.8 Pro (تحليل عميق متقدم)</option>
+    <option value="gemini-3.5-flash">🔹 Gemini 3.5 Flash</option>
+    <option value="custom">✍️ كتابة اسم الموديل يدوياً...</option>
+  </select>
+
+  <input type="text" id="geminiModelInput" class="input-field hidden" placeholder="اكتب اسم الموديل (مثال: gemini-3.8-flash)" value="gemini-3.8-flash" oninput="localStorage.setItem('gemini_model_name', this.value)">
+  <input type="password" id="geminiKeyInput" class="input-field" placeholder="أدخل مفتاح Gemini API Key (يُحفظ تلقائياً)" oninput="localStorage.setItem('gemini_api_key', this.value)">
   
   <div class="rec-actions">
     <button class="btn btn-gemini" onclick="analyzeRecitationWithGemini()">🎙️ تقييم الإلقاء والتشكيل</button>
@@ -231,6 +240,11 @@
   </div>
 
   <div class="slider-row">
+    <div class="slider-header"><span>سرعة الإلقاء (Speed / Tempo)</span><span id="speedVal">1.00x</span></div>
+    <input type="range" id="speedSlider" min="0.70" max="1.40" step="0.05" value="1.00" oninput="onSliderChange()">
+  </div>
+
+  <div class="slider-row">
     <div class="slider-header"><span>تعديل طبقة الصوت (Pitch)</span><span id="pitchVal">-0.5</span></div>
     <input type="range" id="pitchSlider" min="-3" max="3" step="0.5" value="-0.5" oninput="onSliderChange()">
   </div>
@@ -294,14 +308,46 @@
     const savedGeminiKey = localStorage.getItem('gemini_api_key');
     if (savedGeminiKey) document.getElementById('geminiKeyInput').value = savedGeminiKey;
 
+    const savedModel = localStorage.getItem('gemini_model_name');
+    if (savedModel) {
+      const sel = document.getElementById('geminiModelSelect');
+      const inp = document.getElementById('geminiModelInput');
+      const optionExists = Array.from(sel.options).some(o => o.value === savedModel && o.value !== 'custom');
+      if (optionExists) {
+        sel.value = savedModel;
+        inp.value = savedModel;
+      } else {
+        sel.value = 'custom';
+        inp.classList.remove('hidden');
+        inp.value = savedModel;
+      }
+    }
+
     const savedCustom = localStorage.getItem('custom_dsp_preset');
     if (savedCustom) {
       const p = JSON.parse(savedCustom);
-      setSliders(p.pitch, p.warmth, p.tube, p.clarity, p.reverb);
+      setSliders(p.speed || 1.00, p.pitch, p.warmth, p.tube, p.clarity, p.reverb);
       document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
       document.getElementById('pre-custom').classList.add('active');
     }
   });
+
+  function onGeminiModelSelect(val) {
+    const inp = document.getElementById('geminiModelInput');
+    if (val === 'custom') {
+      inp.classList.remove('hidden');
+      inp.focus();
+    } else {
+      inp.classList.add('hidden');
+      inp.value = val;
+      localStorage.setItem('gemini_model_name', val);
+    }
+  }
+
+  function getActiveGeminiModel() {
+    const rawName = document.getElementById('geminiModelInput').value.trim() || 'gemini-3.8-flash';
+    return rawName.replace(/^models\//, '');
+  }
 
   function blobToBase64(blob) {
     return new Promise((resolve) => {
@@ -314,6 +360,7 @@
   // Gemini AI Recitation & Phonetic Director
   async function analyzeRecitationWithGemini() {
     const key = document.getElementById('geminiKeyInput').value.trim();
+    const model = getActiveGeminiModel();
     const poem = document.getElementById('poemText').value.trim();
     const reportBox = document.getElementById('geminiReportBox');
 
@@ -327,7 +374,7 @@
     }
 
     reportBox.classList.remove('hidden');
-    reportBox.innerText = '⏳ جاري الاستماع وتحليل الأداء الإلقائي والتشكيل...';
+    reportBox.innerText = `⏳ جاري التحليل عبر (${model})...`;
 
     try {
       const parts = [
@@ -336,7 +383,7 @@
 حلل هذا الإلقاء الشعري (والنص المرفق إن وجد) بدقة وإيجاز عملي في نقاط واضحة:
 1. تقييم الأداء الصوتي (الوقفات، النفس، نبرة الانفعال، والسرعة).
 2. رصد أي خطأ نحوي في تشكيل أواخر الكلمات أو مخارج الحروف أثناء النطق.
-3. التوصية الهندسية الأنسب (نوع الخلفية الموسيقية، درجة الصدى، وطبقة الصوت المناسبة لجو القصيدة).
+3. التوصية الهندسية الأنسب (نوع الخلفية الموسيقية، درجة الصدى، وطبقة الصوت وسرعته المناسبة لجو القصيدة).
 نص القصيدة المكتوب: ${poem || 'غير مرفق'}`
         }
       ];
@@ -351,7 +398,7 @@
         });
       }
 
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents: [{ parts }] })
@@ -369,6 +416,7 @@
   // Gemini App Auditor & Feature Architect
   async function auditAppWithGemini() {
     const key = document.getElementById('geminiKeyInput').value.trim();
+    const model = getActiveGeminiModel();
     const reportBox = document.getElementById('geminiReportBox');
 
     if (!key) {
@@ -377,11 +425,13 @@
     }
 
     reportBox.classList.remove('hidden');
-    reportBox.innerText = '⏳ جاري فحص بنية الاستوديو واقتراح التحسينات...';
+    reportBox.innerText = `⏳ جاري فحص الاستوديو عبر (${model})...`;
 
     const stateSummary = {
-      app: 'Poetic Voice Studio v6 (Android WebView + Web Audio DSP + ElevenLabs STS + Cloud Music Auto-Ducking)',
+      app: 'Poetic Voice Studio v7 (Android WebView + Web Audio DSP + ElevenLabs STS + Cloud Music Auto-Ducking)',
+      geminiModel: model,
       currentSliders: {
+        speed: document.getElementById('speedSlider').value + 'x',
         pitch: document.getElementById('pitchSlider').value,
         warmth: document.getElementById('warmthSlider').value,
         tubeDrive: document.getElementById('tubeSlider').value,
@@ -394,7 +444,7 @@
     };
 
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -439,27 +489,29 @@ ${JSON.stringify(stateSummary, null, 2)}
   }
 
   function onSliderChange() {
+    const speed = parseFloat(document.getElementById('speedSlider').value);
     const pitch = parseFloat(document.getElementById('pitchSlider').value);
     const warmth = parseFloat(document.getElementById('warmthSlider').value);
     const tube = parseFloat(document.getElementById('tubeSlider').value);
     const clarity = parseFloat(document.getElementById('claritySlider').value);
     const reverb = parseFloat(document.getElementById('reverbSlider').value);
 
+    document.getElementById('speedVal').innerText = speed.toFixed(2) + 'x';
     document.getElementById('pitchVal').innerText = pitch;
     document.getElementById('warmthVal').innerText = '+' + warmth + ' dB';
     document.getElementById('tubeVal').innerText = tube + '%';
     document.getElementById('clarityVal').innerText = '+' + clarity + ' dB';
     document.getElementById('reverbVal').innerText = reverb + '%';
 
-    localStorage.setItem('custom_dsp_preset', JSON.stringify({ pitch, warmth, tube, clarity, reverb }));
+    localStorage.setItem('custom_dsp_preset', JSON.stringify({ speed, pitch, warmth, tube, clarity, reverb }));
     document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('pre-custom').classList.add('active');
   }
 
   function resetToOriginal() {
-    setSliders(0, 0, 0, 0, 0);
+    setSliders(1.00, 0, 0, 0, 0, 0);
     document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-    setStatus('تمت إعادة مستويات الصوت إلى الصفر (الأصلي).');
+    setStatus('تمت إعادة السرعة وجميع مستويات الصوت إلى الأصل.');
     if (rawAudioBuffer) processBroadcastAudio();
   }
 
@@ -467,13 +519,14 @@ ${JSON.stringify(stateSummary, null, 2)}
     document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
     if (type === 'natural') {
-      setSliders(0, 3, 5, 3, 8);
+      setSliders(1.00, 0, 3, 5, 3, 8);
     } else if (type === 'radio') {
-      setSliders(-0.5, 5, 10, 4, 12);
+      setSliders(0.95, -0.5, 5, 10, 4, 12);
     } else if (type === 'deep') {
-      setSliders(-1.5, 8, 15, 5, 18);
+      setSliders(0.90, -1.5, 8, 15, 5, 18);
     }
     localStorage.setItem('custom_dsp_preset', JSON.stringify({
+      speed: parseFloat(document.getElementById('speedSlider').value),
       pitch: parseFloat(document.getElementById('pitchSlider').value),
       warmth: parseFloat(document.getElementById('warmthSlider').value),
       tube: parseFloat(document.getElementById('tubeSlider').value),
@@ -489,12 +542,14 @@ ${JSON.stringify(stateSummary, null, 2)}
       return;
     }
     const p = JSON.parse(savedCustom);
-    setSliders(p.pitch, p.warmth, p.tube, p.clarity, p.reverb);
+    setSliders(p.speed || 1.00, p.pitch, p.warmth, p.tube, p.clarity, p.reverb);
     document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
   }
 
-  function setSliders(pitch, warmth, tube, clarity, reverb) {
+  function setSliders(speed, pitch, warmth, tube, clarity, reverb) {
+    document.getElementById('speedSlider').value = speed;
+    document.getElementById('speedVal').innerText = parseFloat(speed).toFixed(2) + 'x';
     document.getElementById('pitchSlider').value = pitch;
     document.getElementById('pitchVal').innerText = pitch;
     document.getElementById('warmthSlider').value = warmth;
@@ -701,8 +756,8 @@ ${JSON.stringify(stateSummary, null, 2)}
     return outBuffer;
   }
 
-  function buildDuckedBgBuffer(ctx, voiceBuffer, bgBuffer, baseVolume, enableDucking) {
-    const targetLen = voiceBuffer.length + Math.floor(ctx.sampleRate * 1.5);
+  function buildDuckedBgBuffer(ctx, targetVoiceSamples, voiceBuffer, effectiveRate, bgBuffer, baseVolume, enableDucking) {
+    const targetLen = targetVoiceSamples + Math.floor(ctx.sampleRate * 1.5);
     const outBuffer = ctx.createBuffer(1, targetLen, ctx.sampleRate);
     const outData = outBuffer.getChannelData(0);
     const bgData = bgBuffer.getChannelData(0);
@@ -715,8 +770,9 @@ ${JSON.stringify(stateSummary, null, 2)}
       const bgSample = bgData[i % bgData.length];
       let targetGain = baseVolume;
 
-      if (enableDucking && i < voiceData.length) {
-        const vAbs = Math.abs(voiceData[i]);
+      const srcIdx = Math.floor(i * effectiveRate);
+      if (enableDucking && srcIdx < voiceData.length) {
+        const vAbs = Math.abs(voiceData[srcIdx]);
         if (vAbs > 0.04) {
           targetGain = baseVolume * 0.35;
         }
@@ -736,24 +792,27 @@ ${JSON.stringify(stateSummary, null, 2)}
 
   async function processBroadcastAudio() {
     if (!rawAudioBuffer) return;
-    setStatus('جاري المعالجة وموازنة الموسيقى...');
+    setStatus('جاري المعالجة وضبط السرعة والموسيقى...');
 
+    const speedRate = parseFloat(document.getElementById('speedSlider').value);
     const pitchSemitones = parseFloat(document.getElementById('pitchSlider').value);
     const warmthGain = parseFloat(document.getElementById('warmthSlider').value);
     const tubeDrive = parseFloat(document.getElementById('tubeSlider').value);
     const clarityGain = parseFloat(document.getElementById('claritySlider').value);
     const reverbMix = parseFloat(document.getElementById('reverbSlider').value) / 100;
 
-    const playbackRate = Math.pow(2, pitchSemitones / 12);
+    const pitchRate = Math.pow(2, pitchSemitones / 12);
+    const effectiveRate = speedRate * pitchRate;
     const sampleRate = rawAudioBuffer.sampleRate;
-    const newLength = Math.ceil(rawAudioBuffer.length / playbackRate) + Math.floor(sampleRate * 1.5);
+    const targetVoiceSamples = Math.ceil(rawAudioBuffer.length / effectiveRate);
+    const newLength = targetVoiceSamples + Math.floor(sampleRate * 1.5);
 
     const offlineCtx = new OfflineAudioContext(1, newLength, sampleRate);
     const normBuffer = normalizeBuffer(offlineCtx, rawAudioBuffer);
 
     const source = offlineCtx.createBufferSource();
     source.buffer = normBuffer;
-    source.playbackRate.value = playbackRate;
+    source.playbackRate.value = effectiveRate;
 
     const highPass = offlineCtx.createBiquadFilter();
     highPass.type = 'highpass';
@@ -810,7 +869,7 @@ ${JSON.stringify(stateSummary, null, 2)}
     if (bgMusicBuffer) {
       const vol = parseFloat(document.getElementById('bgVolSlider').value) / 100;
       const enableDuck = document.getElementById('autoDuckCheck').checked;
-      const duckedBg = buildDuckedBgBuffer(offlineCtx, normBuffer, bgMusicBuffer, vol * 0.7, enableDuck);
+      const duckedBg = buildDuckedBgBuffer(offlineCtx, targetVoiceSamples, normBuffer, effectiveRate, bgMusicBuffer, vol * 0.7, enableDuck);
 
       const bgSource = offlineCtx.createBufferSource();
       bgSource.buffer = duckedBg;
@@ -827,7 +886,7 @@ ${JSON.stringify(stateSummary, null, 2)}
 
     document.getElementById('playerSection').classList.remove('hidden');
     switchTrack('processed');
-    setStatus('✅ اكتملت المعالجة والدمج الموسيقي بنجاح!');
+    setStatus('✅ اكتملت المعالجة والدمج بنجاح!');
   }
 
   function createImpulseResponse(ctx, duration, decay) {
@@ -935,6 +994,7 @@ ${JSON.stringify(stateSummary, null, 2)}
       if (!response.ok) throw new Error('فشل الاتصال (' + response.status + ')');
       const aiBlob = await response.blob();
       
+      rawAudioBlob = aiBlob;
       const arrayBuffer = await aiBlob.arrayBuffer();
       const tempCtx = new (window.AudioContext || window.webkitAudioContext)();
       rawAudioBuffer = await tempCtx.decodeAudioData(arrayBuffer);
@@ -943,7 +1003,7 @@ ${JSON.stringify(stateSummary, null, 2)}
       processedBlobUrl = URL.createObjectURL(aiBlob);
       document.getElementById('playerSection').classList.remove('hidden');
       switchTrack('processed');
-      setStatus('✨ تم استبدال الصوت بنجاح! يمكنك الآن دمج موسيقى خلفية معه.');
+      setStatus('✨ تم استبدال الصوت بنجاح! يمكنك الآن تعديل سرعته أو دمج موسيقى معه.');
     } catch (e) {
       setStatus('خطأ: ' + e.message);
     }
