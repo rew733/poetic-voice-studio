@@ -16,9 +16,10 @@
     --danger: #ef4444;
     --success: #10b981;
     --gemini: #60a5fa;
+    --purple: #a855f7;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-  body { background: var(--bg); color: var(--text); padding: 14px; padding-bottom: 40px; }
+  body { background: var(--bg); color: var(--text); padding: 14px; padding-bottom: 45px; }
   
   header {
     display: flex; justify-content: space-between; align-items: center;
@@ -61,6 +62,7 @@
   .btn-upload { background: #1e2433; color: var(--text); border: 1px solid var(--card-border); }
   .btn-gold { background: var(--gold); color: #0b0d12; width: 100%; margin-top: 10px; }
   .btn-gemini { background: rgba(96, 165, 250, 0.15); color: var(--gemini); border: 1px solid rgba(96, 165, 250, 0.4); width: 100%; }
+  .btn-purple { background: rgba(168, 85, 247, 0.18); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.45); width: 100%; margin-top: 8px; }
   .btn-success { background: var(--success); color: #fff; width: 100%; margin-top: 10px; }
   .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
@@ -69,7 +71,7 @@
   .presets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 12px; }
   .preset-btn {
     background: #080a0e; color: var(--muted); border: 1px solid var(--card-border);
-    padding: 8px 3px; border-radius: 8px; font-size: 0.74rem; cursor: pointer; text-align: center;
+    padding: 8px 3px; border-radius: 8px; font-size: 0.72rem; cursor: pointer; text-align: center;
   }
   .preset-btn.active { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); font-weight: bold; }
 
@@ -95,13 +97,19 @@
     background: #080a0e; color: var(--muted); font-weight: bold; cursor: pointer; font-size: 0.85rem;
   }
   .ab-btn.active { background: var(--gold); color: #000; border-color: var(--gold); }
-  audio { width: 100%; margin-top: 10px; height: 42px; border-radius: 8px; }
+  audio, video { width: 100%; margin-top: 10px; border-radius: 8px; }
+  audio { height: 42px; }
 
   .ai-report-box {
     background: #080a0e; border: 1px solid rgba(96, 165, 250, 0.35);
     border-radius: 10px; padding: 12px; margin-top: 10px;
     font-size: 0.84rem; line-height: 1.75; color: #e2e8f0;
     white-space: pre-wrap; max-height: 320px; overflow-y: auto;
+  }
+
+  canvas#videoCanvas {
+    width: 180px; height: 320px; background: #080a0e; border: 1px solid var(--card-border);
+    border-radius: 10px; display: block; margin: 10px auto;
   }
 
   .status-msg { font-size: 0.8rem; color: var(--gold); margin-top: 8px; text-align: center; min-height: 18px; }
@@ -112,7 +120,7 @@
 
 <header>
   <h1>🎙️ استوديو الإلقاء الإذاعي</h1>
-  <span class="badge">Studio Pro v8</span>
+  <span class="badge">Spectral Studio v9</span>
 </header>
 
 <!-- 1. الملقن الشعري -->
@@ -152,13 +160,13 @@
   </div>
 
   <select id="geminiModelSelect" class="input-field" onchange="onGeminiModelSelect(this.value)">
-    <option value="gemini-2.0-flash">⚡ Gemini 2.0 Flash (سريع ومستقر جداً)</option>
-    <option value="gemini-2.5-flash">🔹 Gemini 2.5 Flash</option>
+    <option value="gemini-2.5-flash">⚡ Gemini 2.5 Flash (سريع وموصى به)</option>
+    <option value="gemini-2.0-flash">🔹 Gemini 2.0 Flash</option>
     <option value="gemini-3.8-flash">🚀 Gemini 3.8 Flash</option>
     <option value="custom">✍️ كتابة اسم الموديل يدوياً...</option>
   </select>
 
-  <input type="text" id="geminiModelInput" class="input-field hidden" placeholder="اكتب اسم الموديل (مثال: gemini-2.0-flash)" value="gemini-2.0-flash" oninput="localStorage.setItem('gemini_model_name', this.value)">
+  <input type="text" id="geminiModelInput" class="input-field hidden" placeholder="اكتب اسم الموديل (مثال: gemini-2.5-flash)" value="gemini-2.5-flash" oninput="localStorage.setItem('gemini_model_name', this.value)">
   <input type="password" id="geminiKeyInput" class="input-field" placeholder="أدخل مفتاح Gemini API Key (يُحفظ تلقائياً)" oninput="localStorage.setItem('gemini_api_key', this.value)">
   
   <div class="rec-actions">
@@ -166,6 +174,7 @@
     <button class="btn btn-gemini" id="btnAuditApp" onclick="auditAppWithGemini()">🛠️ فحص التطبيق واقتراح ميزات</button>
   </div>
   <div id="geminiReportBox" class="ai-report-box hidden"></div>
+  <button id="btnApplyAiPreset" class="btn btn-gold hidden" onclick="applyGeminiSuggestedSettings()">✨ تطبيق توصية المخرج الذكي على الصوت</button>
 </div>
 
 <!-- 4. تبديل الصوت بأصوات إذاعية من المكتبة السحابية -->
@@ -190,10 +199,10 @@
   <button class="btn btn-gold" onclick="enhanceWithAI()">✨ تحويل الإلقاء إلى صوت المذيع المختار</button>
 </div>
 
-<!-- 5. المكتبة الموسيقية السحابية وموازن الصوت -->
+<!-- 5. المكتبة الموسيقية السحابية وموازن الصوت الطيفي -->
 <div class="card">
   <div class="card-title">
-    <span>🎵 الخلفية الموسيقية وموازن الصوت</span>
+    <span>🎵 الخلفية الموسيقية وموازن الصوت الطيفي</span>
     <span id="bgStatusTag" style="font-size:0.75rem; color:var(--muted);">بدون موسيقى</span>
   </div>
 
@@ -218,30 +227,30 @@
 
     <label class="checkbox-row">
       <input type="checkbox" id="autoDuckCheck" checked>
-      <span>تفعيل الخفض الذكي للموسيقى أثناء الكلام (Auto-Ducking)</span>
+      <span>تفعيل الخفض الذكي والطيفي للموسيقى أثناء الكلام (Spectral Auto-Ducking)</span>
     </label>
 
     <button class="btn-xs" style="width:100%; margin-top:4px; color:var(--danger);" onclick="removeBgMusic()">✕ إزالة الخلفية الموسيقية</button>
   </div>
 </div>
 
-<!-- 6. الهندسة الصوتية الإذاعية المحلية -->
+<!-- 6. الهندسة الصوتية الإذاعية وبروفايلات المشاعر -->
 <div class="card">
   <div class="card-title">
-    <span>🎛️ الهندسة الإذاعية المحلية (بدون إنترنت)</span>
+    <span>🎛️ الهندسة الإذاعية وبروفايلات المشاعر</span>
     <button class="btn-xs" onclick="resetToOriginal()">↺ إعادة للأصلي</button>
   </div>
 
   <div class="presets">
-    <div class="preset-btn" id="pre-natural" onclick="applyPreset('natural', this)">🌿 طبيعي نقي</div>
-    <div class="preset-btn active" id="pre-radio" onclick="applyPreset('radio', this)">🎙️ إذاعي متزن</div>
-    <div class="preset-btn" id="pre-deep" onclick="applyPreset('deep', this)">🎭 عميق دافئ</div>
+    <div class="preset-btn active" id="pre-emotional" onclick="applyPreset('emotional', this)">🌙 وجداني / غزل</div>
+    <div class="preset-btn" id="pre-epic" onclick="applyPreset('epic', this)">⚔️ حماسي / فخر</div>
+    <div class="preset-btn" id="pre-elegy" onclick="applyPreset('elegy', this)">🕯️ تأملي / رثاء</div>
     <div class="preset-btn" id="pre-custom" onclick="loadCustomPreset(this)">⭐ إعداداتي</div>
   </div>
 
   <div class="slider-row">
-    <div class="slider-header"><span>سرعة الإلقاء (Speed / Tempo)</span><span id="speedVal">1.00x</span></div>
-    <input type="range" id="speedSlider" min="0.70" max="1.40" step="0.05" value="1.00" oninput="onSliderChange()">
+    <div class="slider-header"><span>سرعة الإلقاء (Speed / Tempo)</span><span id="speedVal">0.98x</span></div>
+    <input type="range" id="speedSlider" min="0.70" max="1.40" step="0.02" value="0.98" oninput="onSliderChange()">
   </div>
 
   <div class="slider-row">
@@ -250,23 +259,23 @@
   </div>
 
   <div class="slider-row">
-    <div class="slider-header"><span>دفء الصوت والرخامة (Warmth)</span><span id="warmthVal">+5 dB</span></div>
-    <input type="range" id="warmthSlider" min="0" max="14" step="1" value="5" oninput="onSliderChange()">
+    <div class="slider-header"><span>دفء الصوت والرخامة (Warmth)</span><span id="warmthVal">+4 dB</span></div>
+    <input type="range" id="warmthSlider" min="0" max="14" step="1" value="4" oninput="onSliderChange()">
   </div>
 
   <div class="slider-row">
-    <div class="slider-header"><span>تشبّع الصمامات الدافئ (Tube Warmth)</span><span id="tubeVal">10%</span></div>
-    <input type="range" id="tubeSlider" min="0" max="50" step="5" value="10" oninput="onSliderChange()">
+    <div class="slider-header"><span>تشبّع الصمامات المتزن (Tube Drive)</span><span id="tubeVal">3%</span></div>
+    <input type="range" id="tubeSlider" min="0" max="30" step="1" value="3" oninput="onSliderChange()">
   </div>
 
   <div class="slider-row">
-    <div class="slider-header"><span>وضوح مخارج الحروف (Clarity)</span><span id="clarityVal">+4 dB</span></div>
-    <input type="range" id="claritySlider" min="0" max="12" step="1" value="4" oninput="onSliderChange()">
+    <div class="slider-header"><span>وضوح مخارج الحروف (Clarity)</span><span id="clarityVal">+3 dB</span></div>
+    <input type="range" id="claritySlider" min="0" max="12" step="1" value="3" oninput="onSliderChange()">
   </div>
 
   <div class="slider-row">
-    <div class="slider-header"><span>صدى الاستوديو (Studio Reverb)</span><span id="reverbVal">12%</span></div>
-    <input type="range" id="reverbSlider" min="0" max="45" step="3" value="12" oninput="onSliderChange()">
+    <div class="slider-header"><span>صدى الاستوديو النقي (Studio Reverb)</span><span id="reverbVal">7%</span></div>
+    <input type="range" id="reverbSlider" min="0" max="35" step="1" value="7" oninput="onSliderChange()">
   </div>
 
   <button class="btn btn-gold" id="processBtn" onclick="processBroadcastAudio()" disabled>⚡ دمج ومعالجة القصيدة الآن</button>
@@ -279,6 +288,29 @@
     </div>
     <audio id="audioPlayer" controls></audio>
     <button class="btn btn-success" onclick="exportFinalWav()">💾 حفظ القصيدة الإذاعية (WAV)</button>
+  </div>
+</div>
+
+<!-- 7. مُصدّر الفيديو الشعري العمودي (9:16 Reels / Shorts) -->
+<div class="card" style="border-color: rgba(168, 85, 247, 0.35);">
+  <div class="card-title" style="color: #d8b4fe;">
+    <span>🎬 مُصدّر الفيديو الشعري العمودي (9:16)</span>
+    <span style="font-size:0.72rem; color:var(--muted);">Reels / Shorts</span>
+  </div>
+  <p style="font-size:0.78rem; color:var(--muted); margin-bottom:8px; line-height:1.5;">
+    يصمم فيديو عمودياً يجمع خلفية فنية (أو لوحة خط عربي من هاتفك) مع أبيات القصيدة وموجة صوتية ذهبية متفاعلة.
+  </p>
+
+  <input type="text" id="poemTitleInput" class="input-field" placeholder="عنوان القصيدة (يظهر أعلى الفيديو)">
+  <button class="btn btn-upload" style="width:100%;" onclick="document.getElementById('bgImageInput').click()">🖼️ اختيار صورة خلفية للفيديو (اختياري)</button>
+  <input type="file" id="bgImageInput" accept="image/*" class="hidden" onchange="handleBgImageUpload(event)">
+
+  <canvas id="videoCanvas" width="540" height="960"></canvas>
+
+  <button class="btn btn-purple" id="btnRenderVideo" onclick="renderPoeticVideo()" disabled>🎥 توليد الفيديو الشعري الآن</button>
+  <div id="videoOutputBox" class="hidden">
+    <video id="videoPreview" controls></video>
+    <a id="downloadVideoLink" class="btn btn-success" style="text-decoration:none; margin-top:8px;">⬇️ تنزيل الفيديو الجاهز للنشر</a>
   </div>
 </div>
 
@@ -297,6 +329,8 @@
   let rawBlobUrl = null;
   let processedWavBlob = null;
   let processedBlobUrl = null;
+  let bgImageObj = null;
+  let geminiSuggestedPreset = null;
 
   window.addEventListener('DOMContentLoaded', () => {
     const savedPoem = localStorage.getItem('saved_poem_text');
@@ -326,10 +360,12 @@
     const savedCustom = localStorage.getItem('custom_dsp_preset');
     if (savedCustom) {
       const p = JSON.parse(savedCustom);
-      setSliders(p.speed || 1.00, p.pitch, p.warmth, p.tube, p.clarity, p.reverb);
+      setSliders(p.speed || 0.98, p.pitch, p.warmth, p.tube, p.clarity, p.reverb);
       document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
       document.getElementById('pre-custom').classList.add('active');
     }
+
+    drawStaticVideoPreview();
   });
 
   function onGeminiModelSelect(val) {
@@ -345,7 +381,7 @@
   }
 
   function getActiveGeminiModel() {
-    const rawName = document.getElementById('geminiModelInput').value.trim() || 'gemini-2.0-flash';
+    const rawName = document.getElementById('geminiModelInput').value.trim() || 'gemini-2.5-flash';
     return rawName.replace(/^models\//, '');
   }
 
@@ -358,7 +394,6 @@
     });
   }
 
-  // Fetch with 35s Timeout to prevent infinite hanging
   async function fetchWithTimeout(url, options, timeoutMs = 35000) {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeoutMs);
@@ -369,19 +404,20 @@
     } catch (err) {
       clearTimeout(id);
       if (err.name === 'AbortError') {
-        throw new Error('انتهت مهلة الاتصال (35 ثانية) بسبب ضعف الإنترنت أو انقطاعه.');
+        throw new Error('انتهت مهلة الاتصال (35 ثانية) بسبب ضعف الإنترنت.');
       }
       throw err;
     }
   }
 
-  // Gemini AI Recitation & Phonetic Director
+  // Gemini AI Recitation Director + Auto-Settings Suggestion
   async function analyzeRecitationWithGemini() {
     const key = document.getElementById('geminiKeyInput').value.trim();
     const model = getActiveGeminiModel();
     const poem = document.getElementById('poemText').value.trim();
     const reportBox = document.getElementById('geminiReportBox');
     const btn = document.getElementById('btnAnalyzeRec');
+    const applyBtn = document.getElementById('btnApplyAiPreset');
 
     if (!key) {
       setStatus('يرجى إدخال مفتاح Gemini API أولاً.');
@@ -393,6 +429,7 @@
     }
 
     btn.disabled = true;
+    applyBtn.classList.add('hidden');
     reportBox.classList.remove('hidden');
     reportBox.innerText = `⏳ جاري التحليل عبر (${model})...`;
 
@@ -402,14 +439,17 @@
           text: `أنت مخرج إذاعي وناقد عروضي وصوتي محترف للشعر العربي.
 حلل هذا الإلقاء الشعري (والنص المرفق إن وجد) بدقة وإيجاز عملي في نقاط واضحة:
 1. تقييم الأداء الصوتي (الوقفات، النفس، نبرة الانفعال، والسرعة).
-2. رصد أي خطأ نحوي في تشكيل أواخر الكلمات أو مخارج الحروف أثناء النطق.
-3. التوصية الهندسية الأنسب (نوع الخلفية الموسيقية، درجة الصدى، وطبقة الصوت وسرعته المناسبة لجو القصيدة).
+2. رصد أي خطأ نحوي في تشكيل أواخر الكلمات أو مخارج الحروف.
+3. التوصية الهندسية الأنسب لجو القصيدة.
+
+في نهاية ردك تماماً، ضع سطراً يبدأ بـ JSON_SETTINGS: متبوعاً بكائن JSON مضغوط للإعدادات المثالية ضمن الحدود المتزنة (speed: 0.85-1.15, pitch: -2 to 1, warmth: 2-8, tube: 1-5, clarity: 2-6, reverb: 4-14) مثال:
+JSON_SETTINGS:{"speed":0.95,"pitch":-0.5,"warmth":5,"tube":3,"clarity":4,"reverb":8}
+
 نص القصيدة المكتوب: ${poem || 'غير مرفق'}`
         }
       ];
 
       if (rawAudioBuffer) {
-        // Convert to clean WAV for fast & reliable Gemini recognition
         const cleanWav = audioBufferToWav(rawAudioBuffer);
         const b64 = await blobToBase64(cleanWav);
         parts.push({
@@ -432,7 +472,18 @@
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error?.message || 'فشل الاتصال بـ Gemini');
-      reportBox.innerText = data.candidates[0].content.parts[0].text;
+      
+      let fullText = data.candidates[0].content.parts[0].text;
+      const jsonMatch = fullText.match(/JSON_SETTINGS:\s*(\{.*?\})/);
+      if (jsonMatch) {
+        try {
+          geminiSuggestedPreset = JSON.parse(jsonMatch[1]);
+          fullText = fullText.replace(jsonMatch[0], '').trim();
+          applyBtn.classList.remove('hidden');
+        } catch (err) {}
+      }
+
+      reportBox.innerText = fullText;
       setStatus('✅ اكتمل تحليل المخرج الذكي.');
     } catch (e) {
       reportBox.innerText = '❌ خطأ: ' + e.message;
@@ -441,7 +492,15 @@
     }
   }
 
-  // Gemini App Auditor & Feature Architect
+  function applyGeminiSuggestedSettings() {
+    if (!geminiSuggestedPreset) return;
+    const p = geminiSuggestedPreset;
+    setSliders(p.speed || 0.98, p.pitch ?? -0.5, p.warmth ?? 4, p.tube ?? 3, p.clarity ?? 3, p.reverb ?? 7);
+    onSliderChange();
+    setStatus('✨ تم تطبيق توصيات المخرج الذكي على الأشرطة!');
+    if (rawAudioBuffer) processBroadcastAudio();
+  }
+
   async function auditAppWithGemini() {
     const key = document.getElementById('geminiKeyInput').value.trim();
     const model = getActiveGeminiModel();
@@ -458,7 +517,7 @@
     reportBox.innerText = `⏳ جاري فحص الاستوديو عبر (${model})...`;
 
     const stateSummary = {
-      app: 'Poetic Voice Studio v8 (Android WebView + Web Audio DSP + ElevenLabs STS + Cloud Music Auto-Ducking)',
+      app: 'Poetic Voice Studio v9 (Spectral Ducking + Emotional Profiles + 9:16 Video Exporter)',
       geminiModel: model,
       currentSliders: {
         speed: document.getElementById('speedSlider').value + 'x',
@@ -469,8 +528,7 @@
         reverb: document.getElementById('reverbSlider').value
       },
       hasRecording: !!rawAudioBuffer,
-      hasBgMusic: !!bgMusicBuffer,
-      hasElevenLabsKey: !!document.getElementById('apiKeyInput').value.trim()
+      hasBgMusic: !!bgMusicBuffer
     };
 
     try {
@@ -482,13 +540,7 @@
           body: JSON.stringify({
             contents: [{
               parts: [{
-                text: `أنت مهندس صوتيات ومطور تطبيقات أندرويد خبير.
-افحص حالة تطبيق "استوديو الإلقاء الشعري" التالية:
-${JSON.stringify(stateSummary, null, 2)}
-
-قدم تقريراً مركزاً يشمل:
-1. تقييم الإعدادات الصوتية الحالية وهل هناك أي تضارب أو مبالغة فيها.
-2. 4 أفكار عملية ومبتكرة لتطوير الإصدار القادم من التطبيق لخدمة الشعراء وإنتاج مقاطع جاهزة للنشر.`
+                text: `أنت مهندس صوتيات ومطور تطبيقات خبير. افحص حالة التطبيق التالية وقدم تقييماً موجزاً و3 أفكار تطويرية إضافية:\n${JSON.stringify(stateSummary, null, 2)}`
               }]
             }]
           })
@@ -521,7 +573,8 @@ ${JSON.stringify(stateSummary, null, 2)}
 
   function savePoemLocal() {
     localStorage.setItem('saved_poem_text', document.getElementById('poemText').value);
-    setStatus('تم حفظ نص القصيدة في ذاكرة التطبيق.');
+    drawStaticVideoPreview();
+    setStatus('تم حفظ نص القصيدة وتحديث معاينة الفيديو.');
   }
 
   function onSliderChange() {
@@ -551,15 +604,19 @@ ${JSON.stringify(stateSummary, null, 2)}
     if (rawAudioBuffer) processBroadcastAudio();
   }
 
+  // Balanced Emotional Profiles based on Acoustic Audit
   function applyPreset(type, el) {
     document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
-    if (type === 'natural') {
-      setSliders(1.00, 0, 3, 5, 3, 8);
-    } else if (type === 'radio') {
-      setSliders(0.95, -0.5, 5, 10, 4, 12);
-    } else if (type === 'deep') {
-      setSliders(0.90, -1.5, 8, 15, 5, 18);
+    if (type === 'emotional') {
+      // وجداني / غزل: دفء ناعم وصدى متوسط
+      setSliders(0.96, -0.5, 5, 3, 3, 9);
+    } else if (type === 'epic') {
+      // حماسي / فخر: وضوح عالٍ، صدى قصير لمنع التداخل
+      setSliders(1.02, -1.0, 6, 4, 5, 5);
+    } else if (type === 'elegy') {
+      // تأملي / رثاء: إلقاء متأنٍ، طبقة عميقة وصدى رحب
+      setSliders(0.90, -1.5, 7, 3, 3, 12);
     }
     localStorage.setItem('custom_dsp_preset', JSON.stringify({
       speed: parseFloat(document.getElementById('speedSlider').value),
@@ -578,7 +635,7 @@ ${JSON.stringify(stateSummary, null, 2)}
       return;
     }
     const p = JSON.parse(savedCustom);
-    setSliders(p.speed || 1.00, p.pitch, p.warmth, p.tube, p.clarity, p.reverb);
+    setSliders(p.speed || 0.98, p.pitch, p.warmth, p.tube, p.clarity, p.reverb);
     document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
   }
@@ -757,11 +814,12 @@ ${JSON.stringify(stateSummary, null, 2)}
     rawAudioBuffer = await tempCtx.decodeAudioData(arrayBuffer);
     document.getElementById('sourceTag').innerText = label;
     document.getElementById('processBtn').disabled = false;
+    document.getElementById('btnRenderVideo').disabled = false;
     setStatus('جاهز. يمكنك تقييم الإلقاء أو دمج الصوت مباشرة.');
   }
 
   function makeTubeCurve(amount) {
-    const k = amount * 0.8;
+    const k = amount * 0.65;
     const n_samples = 44100;
     const curve = new Float32Array(n_samples);
     if (amount <= 0) {
@@ -792,6 +850,7 @@ ${JSON.stringify(stateSummary, null, 2)}
     return outBuffer;
   }
 
+  // Build Ducked Music Buffer
   function buildDuckedBgBuffer(ctx, targetVoiceSamples, voiceBuffer, effectiveRate, bgBuffer, baseVolume, enableDucking) {
     const targetLen = targetVoiceSamples + Math.floor(ctx.sampleRate * 1.5);
     const outBuffer = ctx.createBuffer(1, targetLen, ctx.sampleRate);
@@ -810,7 +869,7 @@ ${JSON.stringify(stateSummary, null, 2)}
       if (enableDucking && srcIdx < voiceData.length) {
         const vAbs = Math.abs(voiceData[srcIdx]);
         if (vAbs > 0.04) {
-          targetGain = baseVolume * 0.35;
+          targetGain = baseVolume * 0.42;
         }
       }
 
@@ -828,7 +887,7 @@ ${JSON.stringify(stateSummary, null, 2)}
 
   async function processBroadcastAudio() {
     if (!rawAudioBuffer) return;
-    setStatus('جاري المعالجة وضبط السرعة والموسيقى...');
+    setStatus('جاري المعالجة الإذاعية والخلط الطيفي...');
 
     const speedRate = parseFloat(document.getElementById('speedSlider').value);
     const pitchSemitones = parseFloat(document.getElementById('pitchSlider').value);
@@ -852,11 +911,11 @@ ${JSON.stringify(stateSummary, null, 2)}
 
     const highPass = offlineCtx.createBiquadFilter();
     highPass.type = 'highpass';
-    highPass.frequency.value = 70;
+    highPass.frequency.value = 75;
 
     const chestBoost = offlineCtx.createBiquadFilter();
     chestBoost.type = 'peaking';
-    chestBoost.frequency.value = 135;
+    chestBoost.frequency.value = 140;
     chestBoost.Q.value = 1.0;
     chestBoost.gain.value = warmthGain;
 
@@ -873,18 +932,18 @@ ${JSON.stringify(stateSummary, null, 2)}
     const compressor = offlineCtx.createDynamicsCompressor();
     compressor.threshold.value = -20;
     compressor.knee.value = 12;
-    compressor.ratio.value = 3.5;
+    compressor.ratio.value = 3.2;
     compressor.attack.value = 0.005;
     compressor.release.value = 0.2;
 
     const convolver = offlineCtx.createConvolver();
-    convolver.buffer = createImpulseResponse(offlineCtx, 1.1, 3.0);
+    convolver.buffer = createImpulseResponse(offlineCtx, 1.0, 3.2);
 
     const dryGain = offlineCtx.createGain();
     dryGain.gain.value = 1.0;
 
     const wetGain = offlineCtx.createGain();
-    wetGain.gain.value = reverbMix * 0.55;
+    wetGain.gain.value = reverbMix * 0.48;
 
     const masterGain = offlineCtx.createGain();
     masterGain.gain.value = 1.15;
@@ -902,14 +961,23 @@ ${JSON.stringify(stateSummary, null, 2)}
     dryGain.connect(masterGain);
     wetGain.connect(masterGain);
 
+    // Spectral Ducking: Carve vocal formant pocket (1600Hz) out of music so voice stays crystal clear
     if (bgMusicBuffer) {
       const vol = parseFloat(document.getElementById('bgVolSlider').value) / 100;
       const enableDuck = document.getElementById('autoDuckCheck').checked;
-      const duckedBg = buildDuckedBgBuffer(offlineCtx, targetVoiceSamples, normBuffer, effectiveRate, bgMusicBuffer, vol * 0.7, enableDuck);
+      const duckedBg = buildDuckedBgBuffer(offlineCtx, targetVoiceSamples, normBuffer, effectiveRate, bgMusicBuffer, vol * 0.72, enableDuck);
 
       const bgSource = offlineCtx.createBufferSource();
       bgSource.buffer = duckedBg;
-      bgSource.connect(masterGain);
+
+      const spectralPocket = offlineCtx.createBiquadFilter();
+      spectralPocket.type = 'peaking';
+      spectralPocket.frequency.value = 1600;
+      spectralPocket.Q.value = 0.8;
+      spectralPocket.gain.value = enableDuck ? -6.5 : 0;
+
+      bgSource.connect(spectralPocket);
+      spectralPocket.connect(masterGain);
       bgSource.start(0);
     }
 
@@ -921,8 +989,9 @@ ${JSON.stringify(stateSummary, null, 2)}
     processedBlobUrl = URL.createObjectURL(processedWavBlob);
 
     document.getElementById('playerSection').classList.remove('hidden');
+    document.getElementById('btnRenderVideo').disabled = false;
     switchTrack('processed');
-    setStatus('✅ اكتملت المعالجة والدمج بنجاح!');
+    setStatus('✅ اكتملت المعالجة والخلط الطيفي بنجاح!');
   }
 
   function createImpulseResponse(ctx, duration, decay) {
@@ -1042,10 +1111,156 @@ ${JSON.stringify(stateSummary, null, 2)}
       processedWavBlob = aiBlob;
       processedBlobUrl = URL.createObjectURL(aiBlob);
       document.getElementById('playerSection').classList.remove('hidden');
+      document.getElementById('btnRenderVideo').disabled = false;
       switchTrack('processed');
       setStatus('✨ تم استبدال الصوت بنجاح! يمكنك الآن تعديل سرعته أو دمج موسيقى معه.');
     } catch (e) {
       setStatus('خطأ: ' + e.message);
+    }
+  }
+
+  // 9:16 Vertical Poetic Video Renderer
+  function handleBgImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = () => {
+      bgImageObj = img;
+      drawStaticVideoPreview();
+      setStatus('تم تحميل صورة الخلفية للفيديو.');
+    };
+    img.src = URL.createObjectURL(file);
+  }
+
+  function drawVideoFrame(ctx, w, h, freqData) {
+    // 1. Background
+    if (bgImageObj) {
+      ctx.drawImage(bgImageObj, 0, 0, w, h);
+      ctx.fillStyle = 'rgba(8, 10, 14, 0.62)';
+      ctx.fillRect(0, 0, w, h);
+    } else {
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, '#0b0d12');
+      grad.addColorStop(0.5, '#161b26');
+      grad.addColorStop(1, '#080a0e');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    // 2. Gold Frame
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.45)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(24, 24, w - 48, h - 48);
+
+    // 3. Poem Title
+    const title = document.getElementById('poemTitleInput').value.trim() || 'إلقاء شعري';
+    ctx.fillStyle = '#d4af37';
+    ctx.font = 'bold 34px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(title, w / 2, 120);
+
+    // 4. Poem Verses (First 8 lines)
+    const poem = document.getElementById('poemText').value.trim();
+    const lines = poem ? poem.split('\n').filter(l => l.trim()).slice(0, 8) : ['اكتب أبيات قصيدتك في الملقّن', 'لتظهر هنا داخل الفيديو الشعري'];
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = '26px system-ui, sans-serif';
+    let startY = 230;
+    lines.forEach(line => {
+      ctx.fillText(line.trim().slice(0, 42), w / 2, startY);
+      startY += 54;
+    });
+
+    // 5. Golden Audio Spectrum Bars at Bottom
+    const bars = 36;
+    const barW = 8;
+    const gap = 5;
+    const totalW = bars * (barW + gap);
+    const startX = (w - totalW) / 2;
+    const baseY = h - 130;
+
+    for (let i = 0; i < bars; i++) {
+      const val = freqData ? (freqData[i * 2] / 255) : (0.15 + Math.sin(i * 0.4) * 0.1);
+      const barH = Math.max(10, val * 110);
+      ctx.fillStyle = '#d4af37';
+      ctx.fillRect(startX + i * (barW + gap), baseY - barH / 2, barW, barH);
+    }
+  }
+
+  function drawStaticVideoPreview() {
+    const canvas = document.getElementById('videoCanvas');
+    drawVideoFrame(canvas.getContext('2d'), canvas.width, canvas.height, null);
+  }
+
+  async function renderPoeticVideo() {
+    const audioUrl = processedBlobUrl || rawBlobUrl;
+    if (!audioUrl) {
+      setStatus('سجّل أو عالج قصيدة أولاً لتوليد الفيديو.');
+      return;
+    }
+
+    const btn = document.getElementById('btnRenderVideo');
+    btn.disabled = true;
+    setStatus('🎬 جاري تسجيل الفيديو الشعري (يستغرق نفس مدة القصيدة)...');
+
+    try {
+      const canvas = document.getElementById('videoCanvas');
+      const ctx = canvas.getContext('2d');
+      const audioEl = new Audio(audioUrl);
+      audioEl.crossOrigin = 'anonymous';
+
+      const actx = new (window.AudioContext || window.webkitAudioContext)();
+      const src = actx.createMediaElementSource(audioEl);
+      const videoAnalyser = actx.createAnalyser();
+      videoAnalyser.fftSize = 128;
+      const dest = actx.createMediaStreamDestination();
+
+      src.connect(videoAnalyser);
+      src.connect(dest);
+      src.connect(actx.destination);
+
+      const canvasStream = canvas.captureStream(30);
+      const combinedStream = new MediaStream([
+        ...canvasStream.getVideoTracks(),
+        ...dest.stream.getAudioTracks()
+      ]);
+
+      const recorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm' });
+      const chunks = [];
+      recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
+      const freqData = new Uint8Array(videoAnalyser.frequencyBinCount);
+      let rendering = true;
+
+      function renderLoop() {
+        if (!rendering) return;
+        videoAnalyser.getByteFrequencyData(freqData);
+        drawVideoFrame(ctx, canvas.width, canvas.height, freqData);
+        requestAnimationFrame(renderLoop);
+      }
+
+      recorder.onstop = () => {
+        rendering = false;
+        const videoBlob = new Blob(chunks, { type: 'video/webm' });
+        const videoUrl = URL.createObjectURL(videoBlob);
+        document.getElementById('videoPreview').src = videoUrl;
+        const dlLink = document.getElementById('downloadVideoLink');
+        dlLink.href = videoUrl;
+        dlLink.download = 'Poetic_Reel_' + Date.now() + '.webm';
+        document.getElementById('videoOutputBox').classList.remove('hidden');
+        btn.disabled = false;
+        setStatus('🎉 اكتمل الفيديو الشعري العمودي وهو جاهز للمعاينة والتنزيل!');
+      };
+
+      recorder.start();
+      await audioEl.play();
+      renderLoop();
+
+      audioEl.onended = () => {
+        setTimeout(() => recorder.stop(), 400);
+      };
+    } catch (e) {
+      btn.disabled = false;
+      setStatus('خطأ أثناء توليد الفيديو: ' + e.message);
     }
   }
 
