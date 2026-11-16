@@ -32,10 +32,10 @@
   }
   .card-title { font-size: 0.9rem; color: var(--gold); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
 
-  .prompter-controls { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
-  .prompter-controls button {
+  .prompter-controls { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
+  .prompter-controls button, .btn-xs {
     background: #1e2433; color: var(--text); border: 1px solid var(--card-border);
-    padding: 6px 10px; border-radius: 8px; font-size: 0.78rem; cursor: pointer;
+    padding: 5px 9px; border-radius: 8px; font-size: 0.75rem; cursor: pointer;
   }
   .prompter-controls button.active { background: var(--gold); color: #000; font-weight: bold; }
   textarea#poemText {
@@ -46,7 +46,7 @@
   textarea#poemText:focus { outline: none; border-color: var(--gold); }
 
   canvas#visualizer {
-    width: 100%; height: 64px; background: #080a0e; border-radius: 10px;
+    width: 100%; height: 60px; background: #080a0e; border-radius: 10px;
     border: 1px solid var(--card-border); margin-bottom: 10px; display: block;
   }
   .timer { text-align: center; font-size: 1.5rem; font-variant-numeric: tabular-nums; color: var(--gold); margin-bottom: 10px; font-weight: bold; }
@@ -64,10 +64,10 @@
 
   @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
-  .presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; }
+  .presets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 12px; }
   .preset-btn {
     background: #080a0e; color: var(--muted); border: 1px solid var(--card-border);
-    padding: 9px 4px; border-radius: 8px; font-size: 0.78rem; cursor: pointer; text-align: center;
+    padding: 8px 3px; border-radius: 8px; font-size: 0.74rem; cursor: pointer; text-align: center;
   }
   .preset-btn.active { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); font-weight: bold; }
 
@@ -96,17 +96,18 @@
 
 <header>
   <h1>🎙️ استوديو الإلقاء الإذاعي</h1>
-  <span class="badge">Pro Tube DSP v2</span>
+  <span class="badge">Balanced Studio v3</span>
 </header>
 
 <!-- 1. الملقن الشعري -->
 <div class="card">
   <div class="card-title">
-    <span>📜 الملقّن الشعري (Teleprompter)</span>
+    <span>📜 الملقّن الشعري</span>
     <div class="prompter-controls">
-      <button id="toggleScrollBtn" onclick="toggleAutoScroll()">▶ تمرير تلقائي</button>
+      <button id="toggleScrollBtn" onclick="toggleAutoScroll()">▶ تمرير</button>
       <button onclick="changeFontSize(2)">A+</button>
       <button onclick="changeFontSize(-2)">A-</button>
+      <button onclick="savePoemLocal()">💾 حفظ النص</button>
     </div>
   </div>
   <textarea id="poemText" placeholder="اكتب أو الصق أبيات قصيدتك هنا لتظهر أمامك أثناء الإلقاء..."></textarea>
@@ -122,7 +123,7 @@
   <div class="timer" id="timerDisplay">00:00</div>
   <div class="rec-actions">
     <button class="btn btn-rec" id="recordBtn" onclick="toggleRecording()">● ابدأ الإلقاء</button>
-    <button class="btn btn-upload" onclick="document.getElementById('fileInput').click()">📂 استيراد ملف صوتي</button>
+    <button class="btn btn-upload" onclick="document.getElementById('fileInput').click()">📂 استيراد صوت</button>
     <input type="file" id="fileInput" accept="audio/*" class="hidden" onchange="handleFileUpload(event)">
   </div>
 </div>
@@ -130,48 +131,63 @@
 <!-- 3. الهندسة الصوتية الإذاعية -->
 <div class="card">
   <div class="card-title">
-    <span>🎛️ الهندسة الإذاعية وتصحيح الطبقة</span>
+    <span>🎛️ الهندسة الإذاعية المتزنة</span>
+    <button class="btn-xs" onclick="resetToOriginal()">↺ إعادة للأصلي</button>
   </div>
 
   <div class="presets">
-    <div class="preset-btn active" onclick="applyPreset('radio', this)">🎙️ مذيع إذاعي</div>
-    <div class="preset-btn" onclick="applyPreset('deep', this)">🎭 فخامة مسرحية</div>
-    <div class="preset-btn" onclick="applyPreset('warm', this)">🔥 دفء سينمائي</div>
+    <div class="preset-btn" id="pre-natural" onclick="applyPreset('natural', this)">🌿 طبيعي نقي</div>
+    <div class="preset-btn active" id="pre-radio" onclick="applyPreset('radio', this)">🎙️ إذاعي متزن</div>
+    <div class="preset-btn" id="pre-deep" onclick="applyPreset('deep', this)">🎭 عميق دافئ</div>
+    <div class="preset-btn" id="pre-custom" onclick="loadCustomPreset(this)">⭐ إعداداتي</div>
   </div>
 
   <div class="slider-row">
-    <div class="slider-header"><span>تعميق طبقة الصوت (Vocal Pitch)</span><span id="pitchVal">-1.5</span></div>
-    <input type="range" id="pitchSlider" min="-4" max="3" step="0.5" value="-1.5" oninput="document.getElementById('pitchVal').innerText=this.value">
+    <div class="slider-header"><span>تعديل طبقة الصوت (Pitch)</span><span id="pitchVal">-0.5</span></div>
+    <input type="range" id="pitchSlider" min="-3" max="3" step="0.5" value="-0.5" oninput="onSliderChange()">
   </div>
 
   <div class="slider-row">
-    <div class="slider-header"><span>رخامة الصدر والعمق (Radio Bass)</span><span id="warmthVal">+12 dB</span></div>
-    <input type="range" id="warmthSlider" min="0" max="18" step="1" value="12" oninput="document.getElementById('warmthVal').innerText='+'+this.value+' dB'">
+    <div class="slider-header"><span>دفء الصوت والرخامة (Warmth)</span><span id="warmthVal">+5 dB</span></div>
+    <input type="range" id="warmthSlider" min="0" max="14" step="1" value="5" oninput="onSliderChange()">
   </div>
 
   <div class="slider-row">
-    <div class="slider-header"><span>دفء الصمامات والحضور (Tube Drive)</span><span id="tubeVal">35%</span></div>
-    <input type="range" id="tubeSlider" min="0" max="80" step="5" value="35" oninput="document.getElementById('tubeVal').innerText=this.value+'%'">
+    <div class="slider-header"><span>تشبّع الصمامات الدافئ (Tube Warmth)</span><span id="tubeVal">10%</span></div>
+    <input type="range" id="tubeSlider" min="0" max="50" step="5" value="10" oninput="onSliderChange()">
   </div>
 
   <div class="slider-row">
-    <div class="slider-header"><span>بريق ووضوح الحروف (Crisp Presence)</span><span id="clarityVal">+8 dB</span></div>
-    <input type="range" id="claritySlider" min="0" max="14" step="1" value="8" oninput="document.getElementById('clarityVal').innerText='+'+this.value+' dB'">
+    <div class="slider-header"><span>وضوح مخارج الحروف (Clarity)</span><span id="clarityVal">+4 dB</span></div>
+    <input type="range" id="claritySlider" min="0" max="12" step="1" value="4" oninput="onSliderChange()">
   </div>
 
   <div class="slider-row">
-    <div class="slider-header"><span>صدى الاستوديو الملكي (Chamber Reverb)</span><span id="reverbVal">25%</span></div>
-    <input type="range" id="reverbSlider" min="0" max="60" step="5" value="25" oninput="document.getElementById('reverbVal').innerText=this.value+'%'">
+    <div class="slider-header"><span>صدى الاستوديو (Studio Reverb)</span><span id="reverbVal">12%</span></div>
+    <input type="range" id="reverbSlider" min="0" max="45" step="3" value="12" oninput="onSliderChange()">
   </div>
 
-  <button class="btn btn-gold" id="processBtn" onclick="processBroadcastAudio()" disabled>⚡ تحويل إلى صوت إذاعي الآن</button>
+  <!-- خيار الخلفية الموسيقية الاختيارية -->
+  <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--card-border);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+      <span style="font-size:0.8rem; color:var(--muted);">🎵 خلفية صوتية هادئة (Auto-Ducking)</span>
+      <button class="btn-xs" onclick="document.getElementById('bgMusicInput').click()">+ اختيار خلفية</button>
+      <input type="file" id="bgMusicInput" accept="audio/*" class="hidden" onchange="handleBgMusicUpload(event)">
+    </div>
+    <div id="bgControls" class="hidden">
+      <div class="slider-header"><span>مستوى صوت الخلفية</span><span id="bgVolVal">18%</span></div>
+      <input type="range" id="bgVolSlider" min="0" max="50" step="2" value="18" oninput="document.getElementById('bgVolVal').innerText=this.value+'%'">
+    </div>
+  </div>
+
+  <button class="btn btn-gold" id="processBtn" onclick="processBroadcastAudio()" disabled>⚡ تطبيق التعديلات الآن</button>
   <div class="status-msg" id="statusMsg"></div>
 
   <!-- مشغل المقارنة A/B -->
   <div id="playerSection" class="hidden">
     <div class="ab-box">
-      <button class="ab-btn active" id="btnProcessed" onclick="switchTrack('processed')">🎙️ الصوت الإذاعي المعالج</button>
-      <button class="ab-btn" id="btnRaw" onclick="switchTrack('raw')">🎤 الصوت الخام الأصلي</button>
+      <button class="ab-btn active" id="btnProcessed" onclick="switchTrack('processed')">🎙️ الصوت المعدّل</button>
+      <button class="ab-btn" id="btnRaw" onclick="switchTrack('raw')">🎤 الصوت الأصلي</button>
     </div>
     <audio id="audioPlayer" controls></audio>
     <button class="btn btn-success" onclick="exportFinalWav()">💾 حفظ القصيدة الإذاعية (WAV)</button>
@@ -185,9 +201,6 @@
     <span>▼</span>
   </div>
   <div id="aiBody" class="hidden">
-    <p style="font-size:0.78rem; color:var(--muted); margin-bottom:8px; line-height:1.5;">
-      اربط مفتاح ElevenLabs لتحويل إلقائك عبر تقنية Speech-to-Speech مع الحفاظ على بصمتك ووقفاتك الشعرية.
-    </p>
     <input type="password" id="apiKeyInput" class="input-field" placeholder="أدخل ElevenLabs API Key">
     <input type="text" id="voiceIdInput" class="input-field" placeholder="Voice ID" value="pNInz6obpgDQGcFmaJgB">
     <button class="btn btn-upload" style="width:100%;" onclick="enhanceWithAI()">✨ معالجة بالذكاء الاصطناعي السحابي</button>
@@ -204,42 +217,85 @@
   let animationId;
 
   let rawAudioBuffer = null;
+  let bgMusicBuffer = null;
   let rawBlobUrl = null;
   let processedWavBlob = null;
   let processedBlobUrl = null;
 
-  let scrollInterval = null;
-  function toggleAutoScroll() {
-    const btn = document.getElementById('toggleScrollBtn');
-    const area = document.getElementById('poemText');
-    if (scrollInterval) {
-      clearInterval(scrollInterval);
-      scrollInterval = null;
-      btn.classList.remove('active');
-      btn.innerText = '▶ تمرير تلقائي';
-    } else {
-      btn.classList.add('active');
-      btn.innerText = '⏸ إيقاف التمرير';
-      scrollInterval = setInterval(() => { area.scrollTop += 1; }, 65);
+  // Load saved poem & custom settings on startup
+  window.addEventListener('DOMContentLoaded', () => {
+    const savedPoem = localStorage.getItem('saved_poem_text');
+    if (savedPoem) document.getElementById('poemText').value = savedPoem;
+
+    const savedCustom = localStorage.getItem('custom_dsp_preset');
+    if (savedCustom) {
+      const p = JSON.parse(savedCustom);
+      setSliders(p.pitch, p.warmth, p.tube, p.clarity, p.reverb);
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('pre-custom').classList.add('active');
     }
+  });
+
+  function savePoemLocal() {
+    localStorage.setItem('saved_poem_text', document.getElementById('poemText').value);
+    setStatus('تم حفظ نص القصيدة في ذاكرة التطبيق.');
   }
 
-  function changeFontSize(delta) {
-    const area = document.getElementById('poemText');
-    const current = parseFloat(window.getComputedStyle(area).fontSize);
-    area.style.fontSize = Math.max(14, Math.min(34, current + delta)) + 'px';
+  function onSliderChange() {
+    const pitch = parseFloat(document.getElementById('pitchSlider').value);
+    const warmth = parseFloat(document.getElementById('warmthSlider').value);
+    const tube = parseFloat(document.getElementById('tubeSlider').value);
+    const clarity = parseFloat(document.getElementById('claritySlider').value);
+    const reverb = parseFloat(document.getElementById('reverbSlider').value);
+
+    document.getElementById('pitchVal').innerText = pitch;
+    document.getElementById('warmthVal').innerText = '+' + warmth + ' dB';
+    document.getElementById('tubeVal').innerText = tube + '%';
+    document.getElementById('clarityVal').innerText = '+' + clarity + ' dB';
+    document.getElementById('reverbVal').innerText = reverb + '%';
+
+    // Save automatically as user's custom setting
+    localStorage.setItem('custom_dsp_preset', JSON.stringify({ pitch, warmth, tube, clarity, reverb }));
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('pre-custom').classList.add('active');
+  }
+
+  function resetToOriginal() {
+    setSliders(0, 0, 0, 0, 0);
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    setStatus('تمت إعادة جميع المستويات إلى الصفر (الصوت الأصلي).');
+    if (rawAudioBuffer) processBroadcastAudio();
   }
 
   function applyPreset(type, el) {
     document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
-    if (type === 'radio') {
-      setSliders(-1.5, 12, 35, 8, 25);
+    if (type === 'natural') {
+      setSliders(0, 3, 5, 3, 8);
+    } else if (type === 'radio') {
+      setSliders(-0.5, 5, 10, 4, 12);
     } else if (type === 'deep') {
-      setSliders(-2.5, 15, 45, 7, 35);
-    } else if (type === 'warm') {
-      setSliders(-1.0, 14, 50, 9, 20);
+      setSliders(-1.5, 8, 15, 5, 18);
     }
+    localStorage.setItem('custom_dsp_preset', JSON.stringify({
+      pitch: parseFloat(document.getElementById('pitchSlider').value),
+      warmth: parseFloat(document.getElementById('warmthSlider').value),
+      tube: parseFloat(document.getElementById('tubeSlider').value),
+      clarity: parseFloat(document.getElementById('claritySlider').value),
+      reverb: parseFloat(document.getElementById('reverbSlider').value)
+    }));
+  }
+
+  function loadCustomPreset(el) {
+    const savedCustom = localStorage.getItem('custom_dsp_preset');
+    if (!savedCustom) {
+      setStatus('حرّك الأشرطة لحفظ إعداداتك الخاصة تلقائياً.');
+      return;
+    }
+    const p = JSON.parse(savedCustom);
+    setSliders(p.pitch, p.warmth, p.tube, p.clarity, p.reverb);
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
   }
 
   function setSliders(pitch, warmth, tube, clarity, reverb) {
@@ -253,6 +309,28 @@
     document.getElementById('clarityVal').innerText = '+' + clarity + ' dB';
     document.getElementById('reverbSlider').value = reverb;
     document.getElementById('reverbVal').innerText = reverb + '%';
+  }
+
+  let scrollInterval = null;
+  function toggleAutoScroll() {
+    const btn = document.getElementById('toggleScrollBtn');
+    const area = document.getElementById('poemText');
+    if (scrollInterval) {
+      clearInterval(scrollInterval);
+      scrollInterval = null;
+      btn.classList.remove('active');
+      btn.innerText = '▶ تمرير';
+    } else {
+      btn.classList.add('active');
+      btn.innerText = '⏸ إيقاف';
+      scrollInterval = setInterval(() => { area.scrollTop += 1; }, 65);
+    }
+  }
+
+  function changeFontSize(delta) {
+    const area = document.getElementById('poemText');
+    const current = parseFloat(window.getComputedStyle(area).fontSize);
+    area.style.fontSize = Math.max(14, Math.min(34, current + delta)) + 'px';
   }
 
   async function toggleRecording() {
@@ -335,6 +413,17 @@
     await loadAudioBlob(file, file.name);
   }
 
+  async function handleBgMusicUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    setStatus('جاري تحميل الخلفية الصوتية...');
+    const arrayBuffer = await file.arrayBuffer();
+    const tempCtx = new (window.AudioContext || window.webkitAudioContext)();
+    bgMusicBuffer = await tempCtx.decodeAudioData(arrayBuffer);
+    document.getElementById('bgControls').classList.remove('hidden');
+    setStatus('تم ربط الخلفية الصوتية بنجاح.');
+  }
+
   async function loadAudioBlob(blob, label) {
     setStatus('جاري تحليل الموجة الصوتية...');
     rawBlobUrl = URL.createObjectURL(blob);
@@ -343,14 +432,17 @@
     rawAudioBuffer = await tempCtx.decodeAudioData(arrayBuffer);
     document.getElementById('sourceTag').innerText = label;
     document.getElementById('processBtn').disabled = false;
-    setStatus('تم تحميل الصوت. اضغط "تحويل إلى صوت إذاعي الآن".');
+    setStatus('جاهز. اضبط المستويات أو اضغط "تطبيق التعديلات".');
   }
 
-  // Tube Saturation Curve
   function makeTubeCurve(amount) {
-    const k = amount * 1.5;
+    const k = amount * 0.8;
     const n_samples = 44100;
     const curve = new Float32Array(n_samples);
+    if (amount <= 0) {
+      for (let i = 0; i < n_samples; ++i) curve[i] = (i * 2) / n_samples - 1;
+      return curve;
+    }
     const deg = Math.PI / 180;
     for (let i = 0; i < n_samples; ++i) {
       const x = (i * 2) / n_samples - 1;
@@ -359,40 +451,25 @@
     return curve;
   }
 
-  // Noise Gate + Auto Normalize Buffer
-  function cleanAndNormalizeBuffer(ctx, inputBuffer) {
+  function normalizeBuffer(ctx, inputBuffer) {
     const raw = inputBuffer.getChannelData(0);
     const outBuffer = ctx.createBuffer(1, raw.length, inputBuffer.sampleRate);
     const out = outBuffer.getChannelData(0);
-
-    // 1. Find peak for normalization
     let peak = 0;
     for (let i = 0; i < raw.length; i++) {
       const abs = Math.abs(raw[i]);
       if (abs > peak) peak = abs;
     }
-    const normFactor = peak > 0.01 ? (0.85 / peak) : 1.0;
-
-    // 2. Smooth Noise Gate
-    const threshold = 0.018;
-    let envelope = 0;
+    const normFactor = peak > 0.01 ? (0.80 / peak) : 1.0;
     for (let i = 0; i < raw.length; i++) {
-      const s = raw[i] * normFactor;
-      const abs = Math.abs(s);
-      if (abs > threshold) {
-        envelope = Math.min(1.0, envelope + 0.02);
-      } else {
-        envelope = Math.max(0.05, envelope - 0.002);
-      }
-      out[i] = s * envelope;
+      out[i] = raw[i] * normFactor;
     }
     return outBuffer;
   }
 
-  // Pro Broadcast DSP Engine v2
   async function processBroadcastAudio() {
     if (!rawAudioBuffer) return;
-    setStatus('جاري تطبيق هندسة الصمامات وضغط البث الإذاعي...');
+    setStatus('جاري تطبيق التعديلات الصوتية بدقة...');
 
     const pitchSemitones = parseFloat(document.getElementById('pitchSlider').value);
     const warmthGain = parseFloat(document.getElementById('warmthSlider').value);
@@ -402,108 +479,81 @@
 
     const playbackRate = Math.pow(2, pitchSemitones / 12);
     const sampleRate = rawAudioBuffer.sampleRate;
-    const newLength = Math.ceil(rawAudioBuffer.length / playbackRate) + Math.floor(sampleRate * 1.5);
+    const newLength = Math.ceil(rawAudioBuffer.length / playbackRate) + Math.floor(sampleRate * 0.8);
 
     const offlineCtx = new OfflineAudioContext(1, newLength, sampleRate);
-    const cleanedBuffer = cleanAndNormalizeBuffer(offlineCtx, rawAudioBuffer);
+    const normBuffer = normalizeBuffer(offlineCtx, rawAudioBuffer);
 
     const source = offlineCtx.createBufferSource();
-    source.buffer = cleanedBuffer;
+    source.buffer = normBuffer;
     source.playbackRate.value = playbackRate;
 
-    // 1. Sub-bass & Wind Rumble Cut (< 75Hz)
     const highPass = offlineCtx.createBiquadFilter();
     highPass.type = 'highpass';
-    highPass.frequency.value = 75;
+    highPass.frequency.value = 70;
 
-    // 2. Radio Chest Punch (Peaking @ 125Hz)
     const chestBoost = offlineCtx.createBiquadFilter();
     chestBoost.type = 'peaking';
-    chestBoost.frequency.value = 125;
-    chestBoost.Q.value = 1.1;
+    chestBoost.frequency.value = 135;
+    chestBoost.Q.value = 1.0;
     chestBoost.gain.value = warmthGain;
 
-    // 3. Mud & Boxiness Cut (-6dB @ 340Hz)
-    const mudCut = offlineCtx.createBiquadFilter();
-    mudCut.type = 'peaking';
-    mudCut.frequency.value = 340;
-    mudCut.Q.value = 2.0;
-    mudCut.gain.value = -6.0;
-
-    // 4. Vocal Presence & Articulation (@ 3200Hz)
     const clarityFilter = offlineCtx.createBiquadFilter();
     clarityFilter.type = 'peaking';
     clarityFilter.frequency.value = 3200;
-    clarityFilter.Q.value = 1.3;
+    clarityFilter.Q.value = 1.2;
     clarityFilter.gain.value = clarityGain;
 
-    // 5. Studio Condenser Air (+4dB @ 9500Hz)
-    const airFilter = offlineCtx.createBiquadFilter();
-    airFilter.type = 'highshelf';
-    airFilter.frequency.value = 9500;
-    airFilter.gain.value = 4.0;
-
-    // 6. Tube Harmonic Saturator
     const tubeShaper = offlineCtx.createWaveShaper();
     tubeShaper.curve = makeTubeCurve(tubeDrive);
-    tubeShaper.oversample = '4x';
+    tubeShaper.oversample = '2x';
 
-    // 7. Heavy Broadcast Compressor
     const compressor = offlineCtx.createDynamicsCompressor();
-    compressor.threshold.value = -26;
-    compressor.knee.value = 10;
-    compressor.ratio.value = 6.5;
-    compressor.attack.value = 0.003;
-    compressor.release.value = 0.15;
-
-    // 8. Studio Reverb with Pre-Delay
-    const preDelay = offlineCtx.createDelay();
-    preDelay.delayTime.value = 0.035;
+    compressor.threshold.value = -20;
+    compressor.knee.value = 12;
+    compressor.ratio.value = 3.5;
+    compressor.attack.value = 0.005;
+    compressor.release.value = 0.2;
 
     const convolver = offlineCtx.createConvolver();
-    convolver.buffer = createImpulseResponse(offlineCtx, 1.4, 2.6);
-
-    const reverbTone = offlineCtx.createBiquadFilter();
-    reverbTone.type = 'lowpass';
-    reverbTone.frequency.value = 3500;
+    convolver.buffer = createImpulseResponse(offlineCtx, 1.1, 3.0);
 
     const dryGain = offlineCtx.createGain();
     dryGain.gain.value = 1.0;
 
     const wetGain = offlineCtx.createGain();
-    wetGain.gain.value = reverbMix * 0.75;
+    wetGain.gain.value = reverbMix * 0.55;
 
-    // 9. Broadcast Makeup Gain & Brickwall Limiter
     const masterGain = offlineCtx.createGain();
-    masterGain.gain.value = 1.85;
+    masterGain.gain.value = 1.15;
 
-    const limiter = offlineCtx.createDynamicsCompressor();
-    limiter.threshold.value = -1.0;
-    limiter.knee.value = 0;
-    limiter.ratio.value = 20;
-    limiter.attack.value = 0.001;
-    limiter.release.value = 0.04;
-
-    // Routing
     source.connect(highPass);
     highPass.connect(chestBoost);
-    chestBoost.connect(mudCut);
-    mudCut.connect(clarityFilter);
-    clarityFilter.connect(airFilter);
-    airFilter.connect(tubeShaper);
+    chestBoost.connect(clarityFilter);
+    clarityFilter.connect(tubeShaper);
     tubeShaper.connect(compressor);
 
     compressor.connect(dryGain);
-    compressor.connect(preDelay);
-    preDelay.connect(convolver);
-    convolver.connect(reverbTone);
-    reverbTone.connect(wetGain);
+    compressor.connect(convolver);
+    convolver.connect(wetGain);
 
     dryGain.connect(masterGain);
     wetGain.connect(masterGain);
-    masterGain.connect(limiter);
-    limiter.connect(offlineCtx.destination);
 
+    // Optional Background Music Mixing
+    if (bgMusicBuffer) {
+      const bgSource = offlineCtx.createBufferSource();
+      bgSource.buffer = bgMusicBuffer;
+      bgSource.loop = true;
+      const bgGain = offlineCtx.createGain();
+      const vol = parseFloat(document.getElementById('bgVolSlider').value) / 100;
+      bgGain.gain.value = vol * 0.45;
+      bgSource.connect(bgGain);
+      bgGain.connect(masterGain);
+      bgSource.start(0);
+    }
+
+    masterGain.connect(offlineCtx.destination);
     source.start(0);
     const renderedBuffer = await offlineCtx.startRendering();
 
@@ -512,7 +562,7 @@
 
     document.getElementById('playerSection').classList.remove('hidden');
     switchTrack('processed');
-    setStatus('✅ اكتملت الهندسة الإذاعية! قارن الآن بين الصوتين.');
+    setStatus('✅ تم تطبيق التعديلات وفق إعداداتك!');
   }
 
   function createImpulseResponse(ctx, duration, decay) {
@@ -603,7 +653,7 @@
       setStatus('سجّل أو ارفع قصيدة أولاً.');
       return;
     }
-    setStatus('جاري الإرسال إلى الذكاء الاصطناعي للمعالجة الإذاعية...');
+    setStatus('جاري الإرسال إلى الذكاء الاصطناعي...');
     try {
       const sourceBlob = processedWavBlob || await (await fetch(rawBlobUrl)).blob();
       const formData = new FormData();
@@ -617,7 +667,7 @@
         body: formData
       });
 
-      if (!response.ok) throw new Error('فشل الاتصال بالخادم (' + response.status + ')');
+      if (!response.ok) throw new Error('فشل الاتصال (' + response.status + ')');
       const aiBlob = await response.blob();
       processedWavBlob = aiBlob;
       processedBlobUrl = URL.createObjectURL(aiBlob);
