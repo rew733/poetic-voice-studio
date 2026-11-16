@@ -39,17 +39,17 @@
   }
   .prompter-controls button.active { background: var(--gold); color: #000; font-weight: bold; }
   textarea#poemText {
-    width: 100%; height: 140px; background: #080a0e; color: #fff;
+    width: 100%; height: 135px; background: #080a0e; color: #fff;
     border: 1px solid var(--card-border); border-radius: 10px; padding: 12px;
     font-size: 1.15rem; line-height: 1.9; text-align: center; resize: vertical;
   }
   textarea#poemText:focus { outline: none; border-color: var(--gold); }
 
   canvas#visualizer {
-    width: 100%; height: 60px; background: #080a0e; border-radius: 10px;
+    width: 100%; height: 56px; background: #080a0e; border-radius: 10px;
     border: 1px solid var(--card-border); margin-bottom: 10px; display: block;
   }
-  .timer { text-align: center; font-size: 1.5rem; font-variant-numeric: tabular-nums; color: var(--gold); margin-bottom: 10px; font-weight: bold; }
+  .timer { text-align: center; font-size: 1.45rem; font-variant-numeric: tabular-nums; color: var(--gold); margin-bottom: 10px; font-weight: bold; }
   .rec-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .btn {
     padding: 12px; border-radius: 10px; border: none; font-size: 0.9rem; font-weight: 700;
@@ -76,6 +76,17 @@
   .slider-header span:last-child { color: var(--gold); font-weight: bold; }
   input[type=range] { width: 100%; accent-color: var(--gold); }
 
+  select.input-field, input.input-field {
+    width: 100%; background: #080a0e; border: 1px solid var(--card-border);
+    color: var(--text); padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 0.84rem;
+  }
+
+  .checkbox-row {
+    display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text);
+    margin: 8px 0; cursor: pointer;
+  }
+  .checkbox-row input { accent-color: var(--gold); width: 16px; height: 16px; }
+
   .ab-box { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
   .ab-btn {
     padding: 10px; border-radius: 8px; border: 1px solid var(--card-border);
@@ -84,10 +95,6 @@
   .ab-btn.active { background: var(--gold); color: #000; border-color: var(--gold); }
   audio { width: 100%; margin-top: 10px; height: 42px; border-radius: 8px; }
 
-  .input-field {
-    width: 100%; background: #080a0e; border: 1px solid var(--card-border);
-    color: var(--text); padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 0.85rem;
-  }
   .status-msg { font-size: 0.8rem; color: var(--gold); margin-top: 8px; text-align: center; min-height: 18px; }
   .hidden { display: none; }
 </style>
@@ -96,7 +103,7 @@
 
 <header>
   <h1>🎙️ استوديو الإلقاء الإذاعي</h1>
-  <span class="badge">Balanced Studio v3</span>
+  <span class="badge">Cloud Music Studio v4</span>
 </header>
 
 <!-- 1. الملقن الشعري -->
@@ -128,7 +135,42 @@
   </div>
 </div>
 
-<!-- 3. الهندسة الصوتية الإذاعية -->
+<!-- 3. المكتبة الموسيقية السحابية وموازن الصوت -->
+<div class="card">
+  <div class="card-title">
+    <span>🎵 الخلفية الموسيقية وموازن الصوت</span>
+    <span id="bgStatusTag" style="font-size:0.75rem; color:var(--muted);">بدون موسيقى</span>
+  </div>
+
+  <select id="cloudMusicSelect" class="input-field" onchange="loadCloudTrack(this.value)">
+    <option value="">-- اختر مقطوعة من المكتبة السحابية --</option>
+    <option value="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3">🎹 بيانو تأملي حزين (Loneliness Piano)</option>
+    <option value="https://cdn.pixabay.com/download/audio/2022/03/10/audio_c8c8a73467.mp3">🎻 وتر سينمائي دافئ (Cinematic Emotional)</option>
+    <option value="https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3">🌧️ مطر ليلي هادئ (Soft Night Rain)</option>
+    <option value="https://cdn.pixabay.com/download/audio/2021/11/25/audio_91b32e02f9.mp3">🌌 فضاء شعري عميق (Ambient Poetic Pad)</option>
+    <option value="https://cdn.pixabay.com/download/audio/2022/10/25/audio_946bc53629.mp3">🎸 جيتار هادئ دافئ (Acoustic Melancholy)</option>
+    <option value="local">📂 اختيار ملف موسيقي من هاتفي...</option>
+  </select>
+  <input type="file" id="bgMusicInput" accept="audio/*" class="hidden" onchange="handleBgMusicUpload(event)">
+
+  <div id="bgMixerControls" class="hidden">
+    <audio id="bgPreviewPlayer" controls style="height:34px; margin-bottom:10px;"></audio>
+
+    <div class="slider-row">
+      <div class="slider-header"><span>توازن مستوى الموسيقى مع صوتك</span><span id="bgVolVal">22%</span></div>
+      <input type="range" id="bgVolSlider" min="0" max="60" step="2" value="22" oninput="document.getElementById('bgVolVal').innerText=this.value+'%'">
+    </div>
+
+    <label class="checkbox-row">
+      <input type="checkbox" id="autoDuckCheck" checked>
+      <span>تفعيل الخفض الذكي للموسيقى أثناء الكلام (Auto-Ducking)</span>
+    </label>
+
+    <button class="btn-xs" style="width:100%; margin-top:4px; color:var(--danger);" onclick="removeBgMusic()">✕ إزالة الخلفية الموسيقية</button>
+  </div>
+</div>
+
+<!-- 4. الهندسة الصوتية الإذاعية -->
 <div class="card">
   <div class="card-title">
     <span>🎛️ الهندسة الإذاعية المتزنة</span>
@@ -167,26 +209,13 @@
     <input type="range" id="reverbSlider" min="0" max="45" step="3" value="12" oninput="onSliderChange()">
   </div>
 
-  <!-- خيار الخلفية الموسيقية الاختيارية -->
-  <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--card-border);">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-      <span style="font-size:0.8rem; color:var(--muted);">🎵 خلفية صوتية هادئة (Auto-Ducking)</span>
-      <button class="btn-xs" onclick="document.getElementById('bgMusicInput').click()">+ اختيار خلفية</button>
-      <input type="file" id="bgMusicInput" accept="audio/*" class="hidden" onchange="handleBgMusicUpload(event)">
-    </div>
-    <div id="bgControls" class="hidden">
-      <div class="slider-header"><span>مستوى صوت الخلفية</span><span id="bgVolVal">18%</span></div>
-      <input type="range" id="bgVolSlider" min="0" max="50" step="2" value="18" oninput="document.getElementById('bgVolVal').innerText=this.value+'%'">
-    </div>
-  </div>
-
-  <button class="btn btn-gold" id="processBtn" onclick="processBroadcastAudio()" disabled>⚡ تطبيق التعديلات الآن</button>
+  <button class="btn btn-gold" id="processBtn" onclick="processBroadcastAudio()" disabled>⚡ دمج ومعالجة القصيدة الآن</button>
   <div class="status-msg" id="statusMsg"></div>
 
   <!-- مشغل المقارنة A/B -->
   <div id="playerSection" class="hidden">
     <div class="ab-box">
-      <button class="ab-btn active" id="btnProcessed" onclick="switchTrack('processed')">🎙️ الصوت المعدّل</button>
+      <button class="ab-btn active" id="btnProcessed" onclick="switchTrack('processed')">🎙️ النتيجة النهائية</button>
       <button class="ab-btn" id="btnRaw" onclick="switchTrack('raw')">🎤 الصوت الأصلي</button>
     </div>
     <audio id="audioPlayer" controls></audio>
@@ -194,7 +223,7 @@
   </div>
 </div>
 
-<!-- 4. بوابة الذكاء الاصطناعي الاختيارية -->
+<!-- 5. بوابة الذكاء الاصطناعي الاختيارية -->
 <div class="card">
   <div class="card-title" onclick="document.getElementById('aiBody').classList.toggle('hidden')" style="cursor:pointer;">
     <span>🤖 تحسين فائق عبر الذكاء الاصطناعي (اختياري)</span>
@@ -222,7 +251,6 @@
   let processedWavBlob = null;
   let processedBlobUrl = null;
 
-  // Load saved poem & custom settings on startup
   window.addEventListener('DOMContentLoaded', () => {
     const savedPoem = localStorage.getItem('saved_poem_text');
     if (savedPoem) document.getElementById('poemText').value = savedPoem;
@@ -254,7 +282,6 @@
     document.getElementById('clarityVal').innerText = '+' + clarity + ' dB';
     document.getElementById('reverbVal').innerText = reverb + '%';
 
-    // Save automatically as user's custom setting
     localStorage.setItem('custom_dsp_preset', JSON.stringify({ pitch, warmth, tube, clarity, reverb }));
     document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('pre-custom').classList.add('active');
@@ -263,7 +290,7 @@
   function resetToOriginal() {
     setSliders(0, 0, 0, 0, 0);
     document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-    setStatus('تمت إعادة جميع المستويات إلى الصفر (الصوت الأصلي).');
+    setStatus('تمت إعادة مستويات الصوت إلى الصفر (الأصلي).');
     if (rawAudioBuffer) processBroadcastAudio();
   }
 
@@ -413,15 +440,53 @@
     await loadAudioBlob(file, file.name);
   }
 
+  // Cloud Music Library Loader
+  async function loadCloudTrack(value) {
+    if (!value) return;
+    if (value === 'local') {
+      document.getElementById('bgMusicInput').click();
+      return;
+    }
+    document.getElementById('bgStatusTag').innerText = 'جاري التحميل...';
+    setStatus('جاري تحميل المقطوعة من المكتبة السحابية...');
+    try {
+      const response = await fetch(value);
+      if (!response.ok) throw new Error('تعذر جلب المقطوعة السحابية');
+      const blob = await response.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+      const tempCtx = new (window.AudioContext || window.webkitAudioContext)();
+      bgMusicBuffer = await tempCtx.decodeAudioData(arrayBuffer);
+
+      document.getElementById('bgPreviewPlayer').src = URL.createObjectURL(blob);
+      document.getElementById('bgMixerControls').classList.remove('hidden');
+      document.getElementById('bgStatusTag').innerText = '✅ جاهزة للدمج';
+      setStatus('تم تحميل الخلفية الموسيقية. اضبط توازنها ثم اضغط "دمج ومعالجة".');
+    } catch (e) {
+      document.getElementById('bgStatusTag').innerText = 'فشل التحميل';
+      setStatus('تأكد من اتصال الإنترنت أو اختر ملفاً من هاتفك.');
+    }
+  }
+
   async function handleBgMusicUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
-    setStatus('جاري تحميل الخلفية الصوتية...');
+    setStatus('جاري تحميل الخلفية الصوتية من جهازك...');
     const arrayBuffer = await file.arrayBuffer();
     const tempCtx = new (window.AudioContext || window.webkitAudioContext)();
     bgMusicBuffer = await tempCtx.decodeAudioData(arrayBuffer);
-    document.getElementById('bgControls').classList.remove('hidden');
+
+    document.getElementById('bgPreviewPlayer').src = URL.createObjectURL(file);
+    document.getElementById('bgMixerControls').classList.remove('hidden');
+    document.getElementById('bgStatusTag').innerText = '✅ ملف محلي';
     setStatus('تم ربط الخلفية الصوتية بنجاح.');
+  }
+
+  function removeBgMusic() {
+    bgMusicBuffer = null;
+    document.getElementById('cloudMusicSelect').value = '';
+    document.getElementById('bgMixerControls').classList.add('hidden');
+    document.getElementById('bgStatusTag').innerText = 'بدون موسيقى';
+    setStatus('تمت إزالة الخلفية الموسيقية.');
   }
 
   async function loadAudioBlob(blob, label) {
@@ -432,7 +497,7 @@
     rawAudioBuffer = await tempCtx.decodeAudioData(arrayBuffer);
     document.getElementById('sourceTag').innerText = label;
     document.getElementById('processBtn').disabled = false;
-    setStatus('جاهز. اضبط المستويات أو اضغط "تطبيق التعديلات".');
+    setStatus('جاهز. اضغط "دمج ومعالجة القصيدة الآن".');
   }
 
   function makeTubeCurve(amount) {
@@ -467,9 +532,45 @@
     return outBuffer;
   }
 
+  // Create Auto-Ducked & Faded Background Buffer matching Voice Length
+  function buildDuckedBgBuffer(ctx, voiceBuffer, bgBuffer, baseVolume, enableDucking) {
+    const targetLen = voiceBuffer.length + Math.floor(ctx.sampleRate * 1.5);
+    const outBuffer = ctx.createBuffer(1, targetLen, ctx.sampleRate);
+    const outData = outBuffer.getChannelData(0);
+    const bgData = bgBuffer.getChannelData(0);
+    const voiceData = voiceBuffer.getChannelData(0);
+
+    let currentGain = baseVolume;
+    const fadeOutSamples = Math.floor(ctx.sampleRate * 2.0);
+
+    for (let i = 0; i < targetLen; i++) {
+      const bgSample = bgData[i % bgData.length];
+      let targetGain = baseVolume;
+
+      if (enableDucking && i < voiceData.length) {
+        const vAbs = Math.abs(voiceData[i]);
+        if (vAbs > 0.04) {
+          targetGain = baseVolume * 0.35; // Lower music smoothly while speaking
+        }
+      }
+
+      // Smooth envelope follower
+      currentGain += (targetGain - currentGain) * 0.0015;
+
+      // Smooth fade out at the end
+      let endFade = 1.0;
+      if (i > targetLen - fadeOutSamples) {
+        endFade = Math.max(0, (targetLen - i) / fadeOutSamples);
+      }
+
+      outData[i] = bgSample * currentGain * endFade;
+    }
+    return outBuffer;
+  }
+
   async function processBroadcastAudio() {
     if (!rawAudioBuffer) return;
-    setStatus('جاري تطبيق التعديلات الصوتية بدقة...');
+    setStatus('جاري المعالجة وموازنة الموسيقى...');
 
     const pitchSemitones = parseFloat(document.getElementById('pitchSlider').value);
     const warmthGain = parseFloat(document.getElementById('warmthSlider').value);
@@ -479,7 +580,7 @@
 
     const playbackRate = Math.pow(2, pitchSemitones / 12);
     const sampleRate = rawAudioBuffer.sampleRate;
-    const newLength = Math.ceil(rawAudioBuffer.length / playbackRate) + Math.floor(sampleRate * 0.8);
+    const newLength = Math.ceil(rawAudioBuffer.length / playbackRate) + Math.floor(sampleRate * 1.5);
 
     const offlineCtx = new OfflineAudioContext(1, newLength, sampleRate);
     const normBuffer = normalizeBuffer(offlineCtx, rawAudioBuffer);
@@ -540,16 +641,15 @@
     dryGain.connect(masterGain);
     wetGain.connect(masterGain);
 
-    // Optional Background Music Mixing
+    // Mix Cloud or Local Background Music with Auto-Ducking
     if (bgMusicBuffer) {
-      const bgSource = offlineCtx.createBufferSource();
-      bgSource.buffer = bgMusicBuffer;
-      bgSource.loop = true;
-      const bgGain = offlineCtx.createGain();
       const vol = parseFloat(document.getElementById('bgVolSlider').value) / 100;
-      bgGain.gain.value = vol * 0.45;
-      bgSource.connect(bgGain);
-      bgGain.connect(masterGain);
+      const enableDuck = document.getElementById('autoDuckCheck').checked;
+      const duckedBg = buildDuckedBgBuffer(offlineCtx, normBuffer, bgMusicBuffer, vol * 0.7, enableDuck);
+
+      const bgSource = offlineCtx.createBufferSource();
+      bgSource.buffer = duckedBg;
+      bgSource.connect(masterGain);
       bgSource.start(0);
     }
 
@@ -562,7 +662,7 @@
 
     document.getElementById('playerSection').classList.remove('hidden');
     switchTrack('processed');
-    setStatus('✅ تم تطبيق التعديلات وفق إعداداتك!');
+    setStatus('✅ اكتملت المعالجة والدمج الموسيقي بنجاح!');
   }
 
   function createImpulseResponse(ctx, duration, decay) {
