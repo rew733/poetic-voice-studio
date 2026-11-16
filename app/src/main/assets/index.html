@@ -15,6 +15,7 @@
     --muted: #94a3b8;
     --danger: #ef4444;
     --success: #10b981;
+    --gemini: #60a5fa;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
   body { background: var(--bg); color: var(--text); padding: 14px; padding-bottom: 40px; }
@@ -52,13 +53,14 @@
   .timer { text-align: center; font-size: 1.45rem; font-variant-numeric: tabular-nums; color: var(--gold); margin-bottom: 10px; font-weight: bold; }
   .rec-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .btn {
-    padding: 12px; border-radius: 10px; border: none; font-size: 0.9rem; font-weight: 700;
+    padding: 12px; border-radius: 10px; border: none; font-size: 0.88rem; font-weight: 700;
     cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s;
   }
   .btn-rec { background: var(--danger); color: #fff; }
   .btn-rec.recording { animation: pulse 1.2s infinite; }
   .btn-upload { background: #1e2433; color: var(--text); border: 1px solid var(--card-border); }
   .btn-gold { background: var(--gold); color: #0b0d12; width: 100%; margin-top: 10px; }
+  .btn-gemini { background: rgba(96, 165, 250, 0.15); color: var(--gemini); border: 1px solid rgba(96, 165, 250, 0.4); width: 100%; }
   .btn-success { background: var(--success); color: #fff; width: 100%; margin-top: 10px; }
   .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
@@ -95,6 +97,13 @@
   .ab-btn.active { background: var(--gold); color: #000; border-color: var(--gold); }
   audio { width: 100%; margin-top: 10px; height: 42px; border-radius: 8px; }
 
+  .ai-report-box {
+    background: #080a0e; border: 1px solid rgba(96, 165, 250, 0.35);
+    border-radius: 10px; padding: 12px; margin-top: 10px;
+    font-size: 0.84rem; line-height: 1.75; color: #e2e8f0;
+    white-space: pre-wrap; max-height: 320px; overflow-y: auto;
+  }
+
   .status-msg { font-size: 0.8rem; color: var(--gold); margin-top: 8px; text-align: center; min-height: 18px; }
   .hidden { display: none; }
 </style>
@@ -103,7 +112,7 @@
 
 <header>
   <h1>🎙️ استوديو الإلقاء الإذاعي</h1>
-  <span class="badge">Cloud Voices + Music v5</span>
+  <span class="badge">Gemini Director v6</span>
 </header>
 
 <!-- 1. الملقن الشعري -->
@@ -135,15 +144,27 @@
   </div>
 </div>
 
-<!-- 3. تبديل الصوت بأصوات إذاعية من المكتبة السحابية -->
+<!-- 3. المخرج الذكي وفاحص التطبيق (Gemini AI) -->
+<div class="card" style="border-color: rgba(96, 165, 250, 0.35);">
+  <div class="card-title" style="color: var(--gemini);">
+    <span>🧠 المخرج الذكي وفاحص التطبيق (Gemini)</span>
+    <span style="font-size:0.72rem; color:var(--muted);">AI Director</span>
+  </div>
+  <input type="password" id="geminiKeyInput" class="input-field" placeholder="أدخل مفتاح Gemini API Key (من Google AI Studio)" oninput="localStorage.setItem('gemini_api_key', this.value)">
+  
+  <div class="rec-actions">
+    <button class="btn btn-gemini" onclick="analyzeRecitationWithGemini()">🎙️ تقييم الإلقاء والتشكيل</button>
+    <button class="btn btn-gemini" onclick="auditAppWithGemini()">🛠️ فحص التطبيق واقتراح ميزات</button>
+  </div>
+  <div id="geminiReportBox" class="ai-report-box hidden"></div>
+</div>
+
+<!-- 4. تبديل الصوت بأصوات إذاعية من المكتبة السحابية -->
 <div class="card">
   <div class="card-title">
     <span>🗣️ استبدال الصوت بمذيع إذاعي (مكتبة سحابية)</span>
-    <span style="font-size:0.72rem; color:var(--muted);">AI Voice Swap</span>
+    <span style="font-size:0.72rem; color:var(--muted);">ElevenLabs</span>
   </div>
-  <p style="font-size:0.78rem; color:var(--muted); margin-bottom:8px; line-height:1.5;">
-    يحافظ على إلقائك ووقفاتك وتشكيلك، ويستبدل نبرة الصوت بخامة مذيع استوديو احترافي.
-  </p>
 
   <select id="cloudVoiceSelect" class="input-field" onchange="onCloudVoiceSelect(this.value)">
     <option value="pNInz6obpgDQGcFmaJgB">🎙️ مذيع وثائقي فخم وعميق (Adam)</option>
@@ -160,7 +181,7 @@
   <button class="btn btn-gold" onclick="enhanceWithAI()">✨ تحويل الإلقاء إلى صوت المذيع المختار</button>
 </div>
 
-<!-- 4. المكتبة الموسيقية السحابية وموازن الصوت -->
+<!-- 5. المكتبة الموسيقية السحابية وموازن الصوت -->
 <div class="card">
   <div class="card-title">
     <span>🎵 الخلفية الموسيقية وموازن الصوت</span>
@@ -195,7 +216,7 @@
   </div>
 </div>
 
-<!-- 5. الهندسة الصوتية الإذاعية المحلية -->
+<!-- 6. الهندسة الصوتية الإذاعية المحلية -->
 <div class="card">
   <div class="card-title">
     <span>🎛️ الهندسة الإذاعية المحلية (بدون إنترنت)</span>
@@ -237,7 +258,6 @@
   <button class="btn btn-gold" id="processBtn" onclick="processBroadcastAudio()" disabled>⚡ دمج ومعالجة القصيدة الآن</button>
   <div class="status-msg" id="statusMsg"></div>
 
-  <!-- مشغل المقارنة A/B -->
   <div id="playerSection" class="hidden">
     <div class="ab-box">
       <button class="ab-btn active" id="btnProcessed" onclick="switchTrack('processed')">🎙️ النتيجة النهائية</button>
@@ -258,6 +278,7 @@
   let animationId;
 
   let rawAudioBuffer = null;
+  let rawAudioBlob = null;
   let bgMusicBuffer = null;
   let rawBlobUrl = null;
   let processedWavBlob = null;
@@ -270,6 +291,9 @@
     const savedKey = localStorage.getItem('el_api_key');
     if (savedKey) document.getElementById('apiKeyInput').value = savedKey;
 
+    const savedGeminiKey = localStorage.getItem('gemini_api_key');
+    if (savedGeminiKey) document.getElementById('geminiKeyInput').value = savedGeminiKey;
+
     const savedCustom = localStorage.getItem('custom_dsp_preset');
     if (savedCustom) {
       const p = JSON.parse(savedCustom);
@@ -278,6 +302,124 @@
       document.getElementById('pre-custom').classList.add('active');
     }
   });
+
+  function blobToBase64(blob) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result.split(',')[1]);
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  // Gemini AI Recitation & Phonetic Director
+  async function analyzeRecitationWithGemini() {
+    const key = document.getElementById('geminiKeyInput').value.trim();
+    const poem = document.getElementById('poemText').value.trim();
+    const reportBox = document.getElementById('geminiReportBox');
+
+    if (!key) {
+      setStatus('يرجى إدخال مفتاح Gemini API أولاً.');
+      return;
+    }
+    if (!rawAudioBlob && !poem) {
+      setStatus('سجّل قصيدتك أو اكتب نصها في الملقن أولاً.');
+      return;
+    }
+
+    reportBox.classList.remove('hidden');
+    reportBox.innerText = '⏳ جاري الاستماع وتحليل الأداء الإلقائي والتشكيل...';
+
+    try {
+      const parts = [
+        {
+          text: `أنت مخرج إذاعي وناقد عروضي وصوتي محترف للشعر العربي.
+حلل هذا الإلقاء الشعري (والنص المرفق إن وجد) بدقة وإيجاز عملي في نقاط واضحة:
+1. تقييم الأداء الصوتي (الوقفات، النفس، نبرة الانفعال، والسرعة).
+2. رصد أي خطأ نحوي في تشكيل أواخر الكلمات أو مخارج الحروف أثناء النطق.
+3. التوصية الهندسية الأنسب (نوع الخلفية الموسيقية، درجة الصدى، وطبقة الصوت المناسبة لجو القصيدة).
+نص القصيدة المكتوب: ${poem || 'غير مرفق'}`
+        }
+      ];
+
+      if (rawAudioBlob) {
+        const b64 = await blobToBase64(rawAudioBlob);
+        parts.push({
+          inline_data: {
+            mime_type: rawAudioBlob.type || 'audio/webm',
+            data: b64
+          }
+        });
+      }
+
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts }] })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error?.message || 'فشل الاتصال بـ Gemini');
+      reportBox.innerText = data.candidates[0].content.parts[0].text;
+      setStatus('✅ اكتمل تحليل المخرج الذكي.');
+    } catch (e) {
+      reportBox.innerText = '❌ خطأ: ' + e.message;
+    }
+  }
+
+  // Gemini App Auditor & Feature Architect
+  async function auditAppWithGemini() {
+    const key = document.getElementById('geminiKeyInput').value.trim();
+    const reportBox = document.getElementById('geminiReportBox');
+
+    if (!key) {
+      setStatus('يرجى إدخال مفتاح Gemini API أولاً.');
+      return;
+    }
+
+    reportBox.classList.remove('hidden');
+    reportBox.innerText = '⏳ جاري فحص بنية الاستوديو واقتراح التحسينات...';
+
+    const stateSummary = {
+      app: 'Poetic Voice Studio v6 (Android WebView + Web Audio DSP + ElevenLabs STS + Cloud Music Auto-Ducking)',
+      currentSliders: {
+        pitch: document.getElementById('pitchSlider').value,
+        warmth: document.getElementById('warmthSlider').value,
+        tubeDrive: document.getElementById('tubeSlider').value,
+        clarity: document.getElementById('claritySlider').value,
+        reverb: document.getElementById('reverbSlider').value
+      },
+      hasRecording: !!rawAudioBlob,
+      hasBgMusic: !!bgMusicBuffer,
+      hasElevenLabsKey: !!document.getElementById('apiKeyInput').value.trim()
+    };
+
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `أنت مهندس صوتيات ومطور تطبيقات أندرويد خبير.
+افحص حالة تطبيق "استوديو الإلقاء الشعري" التالية:
+${JSON.stringify(stateSummary, null, 2)}
+
+قدم تقريراً مركزاً يشمل:
+1. تقييم الإعدادات الصوتية الحالية وهل هناك أي تضارب أو مبالغة فيها.
+2. 4 أفكار عملية ومبتكرة لتطوير الإصدار القادم من التطبيق لخدمة الشعراء وإنتاج مقاطع جاهزة للنشر.`
+            }]
+          }]
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error?.message || 'فشل الاتصال بـ Gemini');
+      reportBox.innerText = data.candidates[0].content.parts[0].text;
+      setStatus('✅ اكتمل فحص التطبيق.');
+    } catch (e) {
+      reportBox.innerText = '❌ خطأ: ' + e.message;
+    }
+  }
 
   function onCloudVoiceSelect(val) {
     const customInput = document.getElementById('voiceIdInput');
@@ -517,13 +659,14 @@
 
   async function loadAudioBlob(blob, label) {
     setStatus('جاري تحليل الموجة الصوتية...');
+    rawAudioBlob = blob;
     rawBlobUrl = URL.createObjectURL(blob);
     const arrayBuffer = await blob.arrayBuffer();
     const tempCtx = new (window.AudioContext || window.webkitAudioContext)();
     rawAudioBuffer = await tempCtx.decodeAudioData(arrayBuffer);
     document.getElementById('sourceTag').innerText = label;
     document.getElementById('processBtn').disabled = false;
-    setStatus('جاهز. اختر صوت مذيع سحابي أو اضغط "دمج ومعالجة".');
+    setStatus('جاهز. يمكنك تقييم الإلقاء أو دمج الصوت مباشرة.');
   }
 
   function makeTubeCurve(amount) {
@@ -792,7 +935,6 @@
       if (!response.ok) throw new Error('فشل الاتصال (' + response.status + ')');
       const aiBlob = await response.blob();
       
-      // Load AI voice into rawAudioBuffer so you can also mix background music with it!
       const arrayBuffer = await aiBlob.arrayBuffer();
       const tempCtx = new (window.AudioContext || window.webkitAudioContext)();
       rawAudioBuffer = await tempCtx.decodeAudioData(arrayBuffer);
