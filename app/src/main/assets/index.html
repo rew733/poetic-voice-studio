@@ -32,21 +32,19 @@
   }
   .card-title { font-size: 0.9rem; color: var(--gold); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
 
-  /* Teleprompter */
   .prompter-controls { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
-  .prompter-controls button, .btn-sm {
+  .prompter-controls button {
     background: #1e2433; color: var(--text); border: 1px solid var(--card-border);
     padding: 6px 10px; border-radius: 8px; font-size: 0.78rem; cursor: pointer;
   }
   .prompter-controls button.active { background: var(--gold); color: #000; font-weight: bold; }
   textarea#poemText {
-    width: 100%; height: 150px; background: #080a0e; color: #fff;
+    width: 100%; height: 140px; background: #080a0e; color: #fff;
     border: 1px solid var(--card-border); border-radius: 10px; padding: 12px;
     font-size: 1.15rem; line-height: 1.9; text-align: center; resize: vertical;
   }
   textarea#poemText:focus { outline: none; border-color: var(--gold); }
 
-  /* Visualizer & Recorder */
   canvas#visualizer {
     width: 100%; height: 64px; background: #080a0e; border-radius: 10px;
     border: 1px solid var(--card-border); margin-bottom: 10px; display: block;
@@ -66,11 +64,10 @@
 
   @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
-  /* Sliders & Presets */
   .presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; }
   .preset-btn {
     background: #080a0e; color: var(--muted); border: 1px solid var(--card-border);
-    padding: 8px 4px; border-radius: 8px; font-size: 0.78rem; cursor: pointer; text-align: center;
+    padding: 9px 4px; border-radius: 8px; font-size: 0.78rem; cursor: pointer; text-align: center;
   }
   .preset-btn.active { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); font-weight: bold; }
 
@@ -79,16 +76,14 @@
   .slider-header span:last-child { color: var(--gold); font-weight: bold; }
   input[type=range] { width: 100%; accent-color: var(--gold); }
 
-  /* A/B Comparison */
   .ab-box { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
   .ab-btn {
     padding: 10px; border-radius: 8px; border: 1px solid var(--card-border);
     background: #080a0e; color: var(--muted); font-weight: bold; cursor: pointer; font-size: 0.85rem;
   }
   .ab-btn.active { background: var(--gold); color: #000; border-color: var(--gold); }
-  audio { width: 100%; margin-top: 10px; height: 40px; border-radius: 8px; }
+  audio { width: 100%; margin-top: 10px; height: 42px; border-radius: 8px; }
 
-  /* AI Section */
   .input-field {
     width: 100%; background: #080a0e; border: 1px solid var(--card-border);
     color: var(--text); padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 0.85rem;
@@ -101,7 +96,7 @@
 
 <header>
   <h1>🎙️ استوديو الإلقاء الإذاعي</h1>
-  <span class="badge">Broadcast DSP + AI</span>
+  <span class="badge">Pro Tube DSP v2</span>
 </header>
 
 <!-- 1. الملقن الشعري -->
@@ -135,36 +130,41 @@
 <!-- 3. الهندسة الصوتية الإذاعية -->
 <div class="card">
   <div class="card-title">
-    <span>🎛️ المعالجة الإذاعية وتصحيح الطبقة</span>
+    <span>🎛️ الهندسة الإذاعية وتصحيح الطبقة</span>
   </div>
 
   <div class="presets">
-    <div class="preset-btn active" onclick="applyPreset('radio', this)">🎙️ إذاعي فخم</div>
-    <div class="preset-btn" onclick="applyPreset('deep', this)">🎭 شاعر رخيم</div>
-    <div class="preset-btn" onclick="applyPreset('studio', this)">✨ استوديو نقي</div>
+    <div class="preset-btn active" onclick="applyPreset('radio', this)">🎙️ مذيع إذاعي</div>
+    <div class="preset-btn" onclick="applyPreset('deep', this)">🎭 فخامة مسرحية</div>
+    <div class="preset-btn" onclick="applyPreset('warm', this)">🔥 دفء سينمائي</div>
   </div>
 
   <div class="slider-row">
-    <div class="slider-header"><span>تعميق / تصحيح طبقة الصوت (Pitch)</span><span id="pitchVal">-1.0</span></div>
-    <input type="range" id="pitchSlider" min="-4" max="4" step="0.5" value="-1.0" oninput="document.getElementById('pitchVal').innerText=this.value">
+    <div class="slider-header"><span>تعميق طبقة الصوت (Vocal Pitch)</span><span id="pitchVal">-1.5</span></div>
+    <input type="range" id="pitchSlider" min="-4" max="3" step="0.5" value="-1.5" oninput="document.getElementById('pitchVal').innerText=this.value">
   </div>
 
   <div class="slider-row">
-    <div class="slider-header"><span>الدفء والرخامة (Bass Warmth)</span><span id="warmthVal">+6 dB</span></div>
-    <input type="range" id="warmthSlider" min="0" max="12" step="1" value="6" oninput="document.getElementById('warmthVal').innerText='+'+this.value+' dB'">
+    <div class="slider-header"><span>رخامة الصدر والعمق (Radio Bass)</span><span id="warmthVal">+12 dB</span></div>
+    <input type="range" id="warmthSlider" min="0" max="18" step="1" value="12" oninput="document.getElementById('warmthVal').innerText='+'+this.value+' dB'">
   </div>
 
   <div class="slider-row">
-    <div class="slider-header"><span>وضوح مخارج الحروف (Clarity)</span><span id="clarityVal">+5 dB</span></div>
-    <input type="range" id="claritySlider" min="0" max="10" step="1" value="5" oninput="document.getElementById('clarityVal').innerText='+'+this.value+' dB'">
+    <div class="slider-header"><span>دفء الصمامات والحضور (Tube Drive)</span><span id="tubeVal">35%</span></div>
+    <input type="range" id="tubeSlider" min="0" max="80" step="5" value="35" oninput="document.getElementById('tubeVal').innerText=this.value+'%'">
   </div>
 
   <div class="slider-row">
-    <div class="slider-header"><span>صدى القاعة الدافئ (Studio Reverb)</span><span id="reverbVal">15%</span></div>
-    <input type="range" id="reverbSlider" min="0" max="45" step="5" value="15" oninput="document.getElementById('reverbVal').innerText=this.value+'%'">
+    <div class="slider-header"><span>بريق ووضوح الحروف (Crisp Presence)</span><span id="clarityVal">+8 dB</span></div>
+    <input type="range" id="claritySlider" min="0" max="14" step="1" value="8" oninput="document.getElementById('clarityVal').innerText='+'+this.value+' dB'">
   </div>
 
-  <button class="btn btn-gold" id="processBtn" onclick="processBroadcastAudio()" disabled>⚡ تطبيق الهندسة الإذاعية الآن</button>
+  <div class="slider-row">
+    <div class="slider-header"><span>صدى الاستوديو الملكي (Chamber Reverb)</span><span id="reverbVal">25%</span></div>
+    <input type="range" id="reverbSlider" min="0" max="60" step="5" value="25" oninput="document.getElementById('reverbVal').innerText=this.value+'%'">
+  </div>
+
+  <button class="btn btn-gold" id="processBtn" onclick="processBroadcastAudio()" disabled>⚡ تحويل إلى صوت إذاعي الآن</button>
   <div class="status-msg" id="statusMsg"></div>
 
   <!-- مشغل المقارنة A/B -->
@@ -189,7 +189,7 @@
       اربط مفتاح ElevenLabs لتحويل إلقائك عبر تقنية Speech-to-Speech مع الحفاظ على بصمتك ووقفاتك الشعرية.
     </p>
     <input type="password" id="apiKeyInput" class="input-field" placeholder="أدخل ElevenLabs API Key">
-    <input type="text" id="voiceIdInput" class="input-field" placeholder="Voice ID (مثال: pNInz6obpgDQGcFmaJgB)" value="pNInz6obpgDQGcFmaJgB">
+    <input type="text" id="voiceIdInput" class="input-field" placeholder="Voice ID" value="pNInz6obpgDQGcFmaJgB">
     <button class="btn btn-upload" style="width:100%;" onclick="enhanceWithAI()">✨ معالجة بالذكاء الاصطناعي السحابي</button>
   </div>
 </div>
@@ -200,7 +200,6 @@
   let isRecording = false;
   let timerInterval;
   let seconds = 0;
-  let audioCtx;
   let analyser;
   let animationId;
 
@@ -208,9 +207,7 @@
   let rawBlobUrl = null;
   let processedWavBlob = null;
   let processedBlobUrl = null;
-  let currentMode = 'processed';
 
-  // Teleprompter Auto-Scroll
   let scrollInterval = null;
   function toggleAutoScroll() {
     const btn = document.getElementById('toggleScrollBtn');
@@ -223,9 +220,7 @@
     } else {
       btn.classList.add('active');
       btn.innerText = '⏸ إيقاف التمرير';
-      scrollInterval = setInterval(() => {
-        area.scrollTop += 1;
-      }, 65);
+      scrollInterval = setInterval(() => { area.scrollTop += 1; }, 65);
     }
   }
 
@@ -235,31 +230,31 @@
     area.style.fontSize = Math.max(14, Math.min(34, current + delta)) + 'px';
   }
 
-  // Presets
   function applyPreset(type, el) {
     document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
     if (type === 'radio') {
-      setSliders(-1.0, 6, 5, 15);
+      setSliders(-1.5, 12, 35, 8, 25);
     } else if (type === 'deep') {
-      setSliders(-2.0, 9, 4, 20);
-    } else if (type === 'studio') {
-      setSliders(0, 3, 6, 10);
+      setSliders(-2.5, 15, 45, 7, 35);
+    } else if (type === 'warm') {
+      setSliders(-1.0, 14, 50, 9, 20);
     }
   }
 
-  function setSliders(pitch, warmth, clarity, reverb) {
+  function setSliders(pitch, warmth, tube, clarity, reverb) {
     document.getElementById('pitchSlider').value = pitch;
     document.getElementById('pitchVal').innerText = pitch;
     document.getElementById('warmthSlider').value = warmth;
     document.getElementById('warmthVal').innerText = '+' + warmth + ' dB';
+    document.getElementById('tubeSlider').value = tube;
+    document.getElementById('tubeVal').innerText = tube + '%';
     document.getElementById('claritySlider').value = clarity;
     document.getElementById('clarityVal').innerText = '+' + clarity + ' dB';
     document.getElementById('reverbSlider').value = reverb;
     document.getElementById('reverbVal').innerText = reverb + '%';
   }
 
-  // Recording
   async function toggleRecording() {
     const btn = document.getElementById('recordBtn');
     if (!isRecording) {
@@ -348,101 +343,161 @@
     rawAudioBuffer = await tempCtx.decodeAudioData(arrayBuffer);
     document.getElementById('sourceTag').innerText = label;
     document.getElementById('processBtn').disabled = false;
-    setStatus('تم تحميل الصوت بنجاح. اضغط "تطبيق الهندسة الإذاعية".');
+    setStatus('تم تحميل الصوت. اضغط "تحويل إلى صوت إذاعي الآن".');
   }
 
-  // Broadcast DSP Engine
+  // Tube Saturation Curve
+  function makeTubeCurve(amount) {
+    const k = amount * 1.5;
+    const n_samples = 44100;
+    const curve = new Float32Array(n_samples);
+    const deg = Math.PI / 180;
+    for (let i = 0; i < n_samples; ++i) {
+      const x = (i * 2) / n_samples - 1;
+      curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
+    }
+    return curve;
+  }
+
+  // Noise Gate + Auto Normalize Buffer
+  function cleanAndNormalizeBuffer(ctx, inputBuffer) {
+    const raw = inputBuffer.getChannelData(0);
+    const outBuffer = ctx.createBuffer(1, raw.length, inputBuffer.sampleRate);
+    const out = outBuffer.getChannelData(0);
+
+    // 1. Find peak for normalization
+    let peak = 0;
+    for (let i = 0; i < raw.length; i++) {
+      const abs = Math.abs(raw[i]);
+      if (abs > peak) peak = abs;
+    }
+    const normFactor = peak > 0.01 ? (0.85 / peak) : 1.0;
+
+    // 2. Smooth Noise Gate
+    const threshold = 0.018;
+    let envelope = 0;
+    for (let i = 0; i < raw.length; i++) {
+      const s = raw[i] * normFactor;
+      const abs = Math.abs(s);
+      if (abs > threshold) {
+        envelope = Math.min(1.0, envelope + 0.02);
+      } else {
+        envelope = Math.max(0.05, envelope - 0.002);
+      }
+      out[i] = s * envelope;
+    }
+    return outBuffer;
+  }
+
+  // Pro Broadcast DSP Engine v2
   async function processBroadcastAudio() {
     if (!rawAudioBuffer) return;
-    setStatus('جاري معالجة الترددات وضغط الصوت الإذاعي...');
+    setStatus('جاري تطبيق هندسة الصمامات وضغط البث الإذاعي...');
 
     const pitchSemitones = parseFloat(document.getElementById('pitchSlider').value);
     const warmthGain = parseFloat(document.getElementById('warmthSlider').value);
+    const tubeDrive = parseFloat(document.getElementById('tubeSlider').value);
     const clarityGain = parseFloat(document.getElementById('claritySlider').value);
     const reverbMix = parseFloat(document.getElementById('reverbSlider').value) / 100;
 
     const playbackRate = Math.pow(2, pitchSemitones / 12);
     const sampleRate = rawAudioBuffer.sampleRate;
-    const newLength = Math.ceil(rawAudioBuffer.length / playbackRate) + sampleRate * 1.2;
+    const newLength = Math.ceil(rawAudioBuffer.length / playbackRate) + Math.floor(sampleRate * 1.5);
 
     const offlineCtx = new OfflineAudioContext(1, newLength, sampleRate);
+    const cleanedBuffer = cleanAndNormalizeBuffer(offlineCtx, rawAudioBuffer);
 
-    // 1. Source with Pitch shift
     const source = offlineCtx.createBufferSource();
-    source.buffer = rawAudioBuffer;
+    source.buffer = cleanedBuffer;
     source.playbackRate.value = playbackRate;
 
-    // 2. High-Pass Filter (Remove rumble < 85Hz)
+    // 1. Sub-bass & Wind Rumble Cut (< 75Hz)
     const highPass = offlineCtx.createBiquadFilter();
     highPass.type = 'highpass';
-    highPass.frequency.value = 85;
+    highPass.frequency.value = 75;
 
-    // 3. Radio Warmth (Low-Shelf @ 140Hz)
-    const warmthFilter = offlineCtx.createBiquadFilter();
-    warmthFilter.type = 'lowshelf';
-    warmthFilter.frequency.value = 140;
-    warmthFilter.gain.value = warmthGain;
+    // 2. Radio Chest Punch (Peaking @ 125Hz)
+    const chestBoost = offlineCtx.createBiquadFilter();
+    chestBoost.type = 'peaking';
+    chestBoost.frequency.value = 125;
+    chestBoost.Q.value = 1.1;
+    chestBoost.gain.value = warmthGain;
 
-    // 4. Boxiness Cut (Peaking -4dB @ 320Hz)
+    // 3. Mud & Boxiness Cut (-6dB @ 340Hz)
     const mudCut = offlineCtx.createBiquadFilter();
     mudCut.type = 'peaking';
-    mudCut.frequency.value = 320;
-    mudCut.Q.value = 1.8;
-    mudCut.gain.value = -4.0;
+    mudCut.frequency.value = 340;
+    mudCut.Q.value = 2.0;
+    mudCut.gain.value = -6.0;
 
-    // 5. Presence Clarity (Peaking @ 3500Hz)
+    // 4. Vocal Presence & Articulation (@ 3200Hz)
     const clarityFilter = offlineCtx.createBiquadFilter();
     clarityFilter.type = 'peaking';
-    clarityFilter.frequency.value = 3500;
-    clarityFilter.Q.value = 1.2;
+    clarityFilter.frequency.value = 3200;
+    clarityFilter.Q.value = 1.3;
     clarityFilter.gain.value = clarityGain;
 
-    // 6. Condenser Air (High-Shelf @ 10kHz)
+    // 5. Studio Condenser Air (+4dB @ 9500Hz)
     const airFilter = offlineCtx.createBiquadFilter();
     airFilter.type = 'highshelf';
-    airFilter.frequency.value = 10000;
-    airFilter.gain.value = 2.5;
+    airFilter.frequency.value = 9500;
+    airFilter.gain.value = 4.0;
 
-    // 7. Broadcast Dynamics Compressor
+    // 6. Tube Harmonic Saturator
+    const tubeShaper = offlineCtx.createWaveShaper();
+    tubeShaper.curve = makeTubeCurve(tubeDrive);
+    tubeShaper.oversample = '4x';
+
+    // 7. Heavy Broadcast Compressor
     const compressor = offlineCtx.createDynamicsCompressor();
-    compressor.threshold.value = -22;
-    compressor.knee.value = 12;
-    compressor.ratio.value = 4.5;
-    compressor.attack.value = 0.004;
-    compressor.release.value = 0.18;
+    compressor.threshold.value = -26;
+    compressor.knee.value = 10;
+    compressor.ratio.value = 6.5;
+    compressor.attack.value = 0.003;
+    compressor.release.value = 0.15;
 
-    // 8. Studio Reverb Impulse
+    // 8. Studio Reverb with Pre-Delay
+    const preDelay = offlineCtx.createDelay();
+    preDelay.delayTime.value = 0.035;
+
     const convolver = offlineCtx.createConvolver();
-    convolver.buffer = createImpulseResponse(offlineCtx, 1.1, 2.8);
+    convolver.buffer = createImpulseResponse(offlineCtx, 1.4, 2.6);
+
+    const reverbTone = offlineCtx.createBiquadFilter();
+    reverbTone.type = 'lowpass';
+    reverbTone.frequency.value = 3500;
 
     const dryGain = offlineCtx.createGain();
-    dryGain.gain.value = 1.0 - (reverbMix * 0.35);
+    dryGain.gain.value = 1.0;
 
     const wetGain = offlineCtx.createGain();
-    wetGain.gain.value = reverbMix;
+    wetGain.gain.value = reverbMix * 0.75;
 
-    // 9. Master Makeup Gain & Limiter
+    // 9. Broadcast Makeup Gain & Brickwall Limiter
     const masterGain = offlineCtx.createGain();
-    masterGain.gain.value = 1.45;
+    masterGain.gain.value = 1.85;
 
     const limiter = offlineCtx.createDynamicsCompressor();
-    limiter.threshold.value = -1.5;
+    limiter.threshold.value = -1.0;
     limiter.knee.value = 0;
     limiter.ratio.value = 20;
     limiter.attack.value = 0.001;
-    limiter.release.value = 0.05;
+    limiter.release.value = 0.04;
 
-    // Connect Graph
+    // Routing
     source.connect(highPass);
-    highPass.connect(warmthFilter);
-    warmthFilter.connect(mudCut);
+    highPass.connect(chestBoost);
+    chestBoost.connect(mudCut);
     mudCut.connect(clarityFilter);
     clarityFilter.connect(airFilter);
-    airFilter.connect(compressor);
+    airFilter.connect(tubeShaper);
+    tubeShaper.connect(compressor);
 
     compressor.connect(dryGain);
-    compressor.connect(convolver);
-    convolver.connect(wetGain);
+    compressor.connect(preDelay);
+    preDelay.connect(convolver);
+    convolver.connect(reverbTone);
+    reverbTone.connect(wetGain);
 
     dryGain.connect(masterGain);
     wetGain.connect(masterGain);
@@ -457,7 +512,7 @@
 
     document.getElementById('playerSection').classList.remove('hidden');
     switchTrack('processed');
-    setStatus('✅ اكتملت المعالجة الإذاعية بنجاح!');
+    setStatus('✅ اكتملت الهندسة الإذاعية! قارن الآن بين الصوتين.');
   }
 
   function createImpulseResponse(ctx, duration, decay) {
@@ -471,14 +526,16 @@
   }
 
   function switchTrack(mode) {
-    currentMode = mode;
     const player = document.getElementById('audioPlayer');
+    const wasPlaying = !player.paused;
+    const currentTime = player.currentTime;
     document.getElementById('btnProcessed').classList.toggle('active', mode === 'processed');
     document.getElementById('btnRaw').classList.toggle('active', mode === 'raw');
     player.src = mode === 'processed' ? processedBlobUrl : rawBlobUrl;
+    player.currentTime = currentTime;
+    if (wasPlaying) player.play();
   }
 
-  // Convert AudioBuffer to 16-bit PCM WAV
   function audioBufferToWav(buffer) {
     const numChannels = 1;
     const sampleRate = buffer.sampleRate;
@@ -515,7 +572,6 @@
     }
   }
 
-  // Save via Android Bridge
   function exportFinalWav() {
     if (!processedWavBlob) return;
     const reader = new FileReader();
@@ -536,7 +592,6 @@
     reader.readAsDataURL(processedWavBlob);
   }
 
-  // Optional ElevenLabs Speech-to-Speech AI
   async function enhanceWithAI() {
     const apiKey = document.getElementById('apiKeyInput').value.trim();
     const voiceId = document.getElementById('voiceIdInput').value.trim();
